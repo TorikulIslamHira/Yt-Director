@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { UploadCloud, FileText, X, AlertCircle } from "lucide-react";
+import { UploadCloud, FileText, X, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import { saveScriptText } from "@/lib/scene-storage";
 
 const ACCEPTED_EXTENSIONS = [".doc", ".docx", ".txt", ".pdf"];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -32,6 +33,7 @@ export default function UploadPage() {
   const [activeTab, setActiveTab] = useState<"file" | "paste">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function handleFileSelected(candidate: File | null) {
     if (!candidate) return;
@@ -60,7 +62,7 @@ export default function UploadPage() {
       ? file !== null
       : pastedText.trim().length >= MIN_PASTE_LENGTH;
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (activeTab === "paste" && pastedText.trim().length < MIN_PASTE_LENGTH) {
       setError(`স্ক্রিপ্ট অন্তত ${MIN_PASTE_LENGTH} ক্যারেক্টার হতে হবে।`);
       return;
@@ -70,7 +72,33 @@ export default function UploadPage() {
       return;
     }
     setError(null);
-    router.push("/processing");
+    setIsSubmitting(true);
+
+    try {
+      let scriptText = pastedText.trim();
+
+      if (activeTab === "file" && file) {
+        const formData = new FormData();
+        formData.append("file", file);
+        const res = await fetch("/api/parse-script", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? "ফাইল থেকে টেক্সট বের করা যায়নি।");
+          setIsSubmitting(false);
+          return;
+        }
+        scriptText = data.text;
+      }
+
+      saveScriptText(scriptText);
+      router.push("/processing");
+    } catch {
+      setError("কিছু একটা ভুল হয়েছে, আবার চেষ্টা করুন।");
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -188,9 +216,10 @@ export default function UploadPage() {
       <Button
         size="lg"
         className="w-full"
-        disabled={!canSubmit}
+        disabled={!canSubmit || isSubmitting}
         onClick={handleSubmit}
       >
+        {isSubmitting && <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />}
         স্ক্রিপ্ট প্রসেস করুন
       </Button>
     </main>

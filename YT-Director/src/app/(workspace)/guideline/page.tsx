@@ -1,23 +1,30 @@
+"use client";
+
 import { ListChecks, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { mockScenes } from "@/lib/mock-scenes";
+import { useScenes } from "@/hooks/use-scenes";
 
 export default function GuidelinePage() {
+  const { scenes, isDemo } = useScenes();
+
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
       <div className="space-y-2">
-        <h1 className="flex items-center gap-2 text-2xl leading-8 font-semibold">
-          <ListChecks className="size-5" strokeWidth={1.75} />
-          এডিটিং গাইডলাইন
-        </h1>
+        <div className="flex flex-wrap items-center gap-2">
+          <h1 className="flex items-center gap-2 text-2xl leading-8 font-semibold">
+            <ListChecks className="size-5" strokeWidth={1.75} />
+            এডিটিং গাইডলাইন
+          </h1>
+          {isDemo && <Badge variant="secondary">ডেমো ডেটা</Badge>}
+        </div>
         <p className="text-sm leading-5 text-muted-foreground">
           দৃশ্য অনুযায়ী ধারাবাহিক নির্দেশনা — উপর থেকে নিচে অনুসরণ করুন।
         </p>
       </div>
 
       <ol className="space-y-0">
-        {mockScenes.map((scene, i) => (
+        {scenes.map((scene, i) => (
           <li key={scene.id}>
             <div className="flex gap-4 py-4">
               <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-secondary text-sm leading-5 font-medium text-secondary-foreground">
@@ -42,7 +49,7 @@ export default function GuidelinePage() {
                 )}
               </div>
             </div>
-            {i < mockScenes.length - 1 && <Separator />}
+            {i < scenes.length - 1 && <Separator />}
           </li>
         ))}
       </ol>
