@@ -38,10 +38,12 @@ export async function segmentScript(scriptText: string): Promise<SegmentedScene[
     throw new Error("GEMINI_API_KEY সেট করা নেই।");
   }
 
-  const prompt = `You are a video production assistant. Split the following script into distinct visual scenes suitable for a short video. For each scene, provide:
+  const prompt = `You are a video production assistant. Split the following script into scenes for a short video, at SENTENCE-LEVEL granularity: treat each sentence (or independent clause, if a sentence contains multiple distinct visual ideas) as its OWN separate scene. Do not merge multiple sentences into a single scene, even if they describe related or continuous action — each scene's narration must correspond to exactly one sentence (or clause) from the original script, and every sentence in the script must produce at least one scene, in order.
+
+For each scene, provide:
 - "title": a short scene title, in the same language as the script
-- "narration": the exact portion of the script's text that belongs to this scene (do not translate or paraphrase it)
-- "searchKeywords": 2-4 English keywords best suited for searching free stock video footage (Pexels/Pixabay) matching this scene
+- "narration": the exact sentence/clause from the script that belongs to this scene (do not translate, paraphrase, or combine it with other sentences)
+- "searchKeywords": 2-4 English keywords best suited for searching free stock video footage (Pexels/Pixabay) matching this specific scene — make these as visually specific as possible (subject, action, setting) so consecutive scenes search for visibly different footage rather than near-duplicates
 - "aiPrompt": a detailed English text-to-video AI generation prompt describing this scene visually, to use as a fallback if no stock footage is found
 
 Return ONLY a JSON array, no prose, no markdown fences.
