@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchLoudlyGenres } from "@/lib/loudly";
+import { fetchLoudlyGenres } from "@/lib/integrations/loudly";
 
 export const revalidate = 3600;
 

@@ -118,15 +118,19 @@ src/
   app/                # routes only (App Router) — page.tsx, layout.tsx per route
   components/
     ui/                # shadcn primitives (Button, Card, Input, ...) — do not hand-edit generated internals beyond token wiring
+    layout/            # site-wide chrome, not feature-specific: AppHeader, ThemeProvider, ThemeToggle
     <feature>/         # feature components, e.g. components/scene-review/SceneCard.tsx
   db/                  # sqlite/drizzle schema + client (server-only)
-  lib/                 # server-only utils, API clients, validation, shared helpers
+  lib/                 # server-only utils, validation, parsing, DB row mappers, shared helpers
+    integrations/      # third-party API clients (Gemini, Loudly, Pexels/Pixabay) + their shared fetch-retry helper
     client/            # browser-only helpers (sessionStorage, Blob URLs, client fetch wrapper) — never imported from a route handler
   hooks/               # custom hooks
   types/               # shared TypeScript types
 ```
 
 `lib/client/` vs `lib/`: anything that touches a browser-only API (`sessionStorage`, `Blob`, `URL.createObjectURL`) or is client-only demo data goes in `lib/client/`. Everything else in `lib/` (API clients, validation, parsing, DB row mappers) is server-only and must never be imported into a `"use client"` file.
+
+`lib/integrations/` vs `lib/`: a file that calls an external third-party API (Gemini, Loudly, Pexels, Pixabay) goes in `lib/integrations/`, named after the service. Local-only server logic (validation schemas, script parsing, zip/guideline building, DB row mapping) stays flat in `lib/`.
 
 ### TypeScript
 - `strict: true` (already on). Never use `any` — use `unknown` + narrowing, or a proper type.

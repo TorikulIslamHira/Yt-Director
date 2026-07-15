@@ -5,7 +5,7 @@ import { Play, Pause, Download, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { LoudlyGenre } from "@/lib/loudly";
+import type { LoudlyGenre } from "@/lib/integrations/loudly";
 import { loadProjectId, saveBgm } from "@/lib/client/scene-storage";
 import { readErrorMessage } from "@/lib/client/fetch-json";
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { segmentScript } from "@/lib/gemini";
-import { searchStockVideo } from "@/lib/stock-search";
+import { segmentScript } from "@/lib/integrations/gemini";
+import { searchStockVideo } from "@/lib/integrations/stock-search";
 import { generateScenesSchema } from "@/lib/validation";
 import type { Scene } from "@/types/scene";
 

@@ -2,7 +2,7 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { generateLoudlyTrack } from "@/lib/loudly";
+import { generateLoudlyTrack } from "@/lib/integrations/loudly";
 import { generateBgmSchema } from "@/lib/validation";
 import { db, BGM_DIR } from "@/db/client";
 import { projects } from "@/db/schema";
