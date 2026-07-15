@@ -14,6 +14,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { saveScriptText, saveProjectId } from "@/lib/scene-storage";
+import { fetchJson } from "@/lib/fetch-json";
 
 const ACCEPTED_EXTENSIONS = [".doc", ".docx", ".txt", ".pdf"];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -80,13 +81,14 @@ export default function UploadPage() {
       if (activeTab === "file" && file) {
         const formData = new FormData();
         formData.append("file", file);
-        const res = await fetch("/api/parse-script", {
-          method: "POST",
-          body: formData,
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          setError(data.error ?? "ফাইল থেকে টেক্সট বের করা যায়নি।");
+        let data: { text: string };
+        try {
+          data = await fetchJson<{ text: string }>("/api/parse-script", {
+            method: "POST",
+            body: formData,
+          });
+        } catch (err) {
+          setError((err as Error).message);
           setIsSubmitting(false);
           return;
         }
@@ -96,15 +98,12 @@ export default function UploadPage() {
       saveScriptText(scriptText);
 
       try {
-        const projectRes = await fetch("/api/projects", {
+        const { id } = await fetchJson<{ id: string }>("/api/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ scriptText }),
         });
-        if (projectRes.ok) {
-          const { id } = await projectRes.json();
-          saveProjectId(id);
-        }
+        saveProjectId(id);
       } catch {
         // persistence is best-effort — the in-tab flow still works without it
       }

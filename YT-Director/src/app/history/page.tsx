@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Project } from "@/types/scene";
 import { saveScriptText, saveScenes, saveProjectId, saveBgm } from "@/lib/scene-storage";
+import { fetchJson } from "@/lib/fetch-json";
 
 type ProjectSummary = Pick<Project, "id" | "title" | "createdAt" | "updatedAt">;
 
@@ -18,23 +19,15 @@ export default function HistoryPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/projects")
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "হিস্টরি লোড করা যায়নি।");
-        setProjects(data.projects);
-      })
+    fetchJson<{ projects: ProjectSummary[] }>("/api/projects")
+      .then((data) => setProjects(data.projects))
       .catch((err: Error) => setError(err.message));
   }, []);
 
   async function handleResume(id: string) {
     setBusyId(id);
     try {
-      const res = await fetch(`/api/projects/${id}`);
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "প্রজেক্ট খোলা যায়নি।");
-
-      const project: Project = data.project;
+      const { project } = await fetchJson<{ project: Project }>(`/api/projects/${id}`);
       saveScriptText(project.scriptText);
       saveScenes(project.scenes);
       saveProjectId(project.id);

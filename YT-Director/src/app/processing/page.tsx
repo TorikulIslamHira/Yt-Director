@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Circle, AlertCircle, RotateCcw } from "lucide-re
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { loadScriptText, saveScenes, loadProjectId } from "@/lib/scene-storage";
+import { fetchJson } from "@/lib/fetch-json";
 import type { Scene } from "@/types/scene";
 
 const STEPS = [
@@ -30,14 +31,12 @@ export default function ProcessingPage() {
 
     cancelledRef.current = false;
 
-    fetch("/api/generate-scenes", {
+    fetchJson<{ scenes: Scene[] }>("/api/generate-scenes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ text: scriptText }),
     })
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "প্রসেসিং ব্যর্থ হয়েছে।");
+      .then(async (data) => {
         if (cancelledRef.current) return;
         setCurrentStep(STEPS.length);
         saveScenes(data.scenes);

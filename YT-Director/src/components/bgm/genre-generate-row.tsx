@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { LoudlyGenre } from "@/lib/loudly";
 import { loadProjectId, saveBgm } from "@/lib/scene-storage";
+import { readErrorMessage } from "@/lib/fetch-json";
 
 const DURATION_OPTIONS = [15, 30, 60] as const;
 
@@ -31,8 +32,7 @@ export function GenreGenerateRow({ genre }: { genre: LoudlyGenre }) {
         }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error ?? "তৈরি করা যায়নি।");
+        throw new Error(await readErrorMessage(res, "তৈরি করা যায়নি।"));
       }
       const blob = await res.blob();
       setAudioUrl(URL.createObjectURL(blob));

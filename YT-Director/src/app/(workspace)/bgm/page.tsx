@@ -5,6 +5,7 @@ import { Music, Clock3, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GenreGenerateRow } from "@/components/bgm/genre-generate-row";
 import type { LoudlyGenre } from "@/lib/loudly";
+import { fetchJson } from "@/lib/fetch-json";
 
 export default function BgmPage() {
   const [genres, setGenres] = useState<LoudlyGenre[] | null>(null);
@@ -12,10 +13,8 @@ export default function BgmPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch("/api/bgm-genres")
-      .then(async (res) => {
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "জেনার লোড করা যায়নি।");
+    fetchJson<{ genres: LoudlyGenre[] }>("/api/bgm-genres")
+      .then((data) => {
         if (!cancelled) setGenres(data.genres);
       })
       .catch((err: Error) => {
