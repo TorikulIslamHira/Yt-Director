@@ -61,6 +61,7 @@ secret` on GitHub and add:
 
 ```
 GEMINI_API_KEY
+GROQ_API_KEY
 PEXELS_API_KEY
 PIXABAY_API_KEY
 TELEGRAM_BOT_TOKEN
@@ -69,6 +70,13 @@ TELEGRAM_CHAT_ID
 
 (Loudly was removed 2026-07-16 — no key needed. BGM is planned via
 ElevenLabs — add an `ELEVENLABS_API_KEY` secret here once that's wired.)
+
+`GROQ_API_KEY` (added 2026-07-16) is an automatic fallback for scene
+segmentation and title/description generation — if the Gemini free-tier
+quota (20 req/day) is exhausted or Gemini errors out, the app retries the
+same request against Groq's free Llama 3.3 70B before failing (see
+`src/lib/integrations/gemini.ts`). If unset, Gemini failures just surface
+as before — no behavior change.
 
 `TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` (added 2026-07-16) power optional
 Telegram notifications — sent when scene generation finishes/fails and when
