@@ -1,38 +1,62 @@
 # Production Server Setup (one-time)
 
-This guide sets up a fresh Ubuntu VPS to host YT-Director with zero-downtime
-deploys triggered by `.github/workflows/deploy.yml` on every push to `main`.
+Your server is local (no public IP) and already exposes an existing app
+through a Cloudflare Tunnel. GitHub's cloud runners can't SSH into a machine
+with no public IP, so instead of SSH we use a **self-hosted GitHub Actions
+runner**: a small agent you install once on this machine. It only makes
+*outbound* connections to GitHub — no port needs to be opened, and it doesn't
+touch your existing Cloudflare Tunnel setup for the other app.
 
-## 1. Install Node.js, PM2, nginx, git
+Every push to `main` then runs directly on this machine and does a
+zero-downtime `pm2 reload`.
+
+## 1. Install Node.js, PM2, git (skip whatever you already have for the existing app)
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs nginx git
+sudo apt-get install -y nodejs git
 sudo npm install -g pm2
 ```
 
-## 2. Create a deploy user (recommended) and SSH key for GitHub Actions
+## 2. Install the self-hosted GitHub Actions runner
+
+1. Go to: `https://github.com/TorikulIslamHira/Yt-Director` → **Settings** →
+   **Actions** → **Runners** → **New self-hosted runner** → pick Linux/macOS
+   matching your machine.
+2. GitHub shows you a short set of commands with a **registration token**
+   baked in (valid ~1 hour, unique to you — don't reuse the example below).
+   Run them on the server, e.g.:
 
 ```bash
-sudo adduser --disabled-password --gecos "" deploy
-sudo usermod -aG sudo deploy   # optional, only if it needs sudo
-su - deploy
-ssh-keygen -t ed25519 -C "github-actions-deploy" -f ~/.ssh/gh_actions_key -N ""
-cat ~/.ssh/gh_actions_key.pub >> ~/.ssh/authorized_keys
-chmod 600 ~/.ssh/authorized_keys
-cat ~/.ssh/gh_actions_key   # copy this PRIVATE key -> GitHub secret DEPLOY_SSH_KEY
+mkdir actions-runner && cd actions-runner
+curl -o actions-runner.tar.gz -L https://github.com/actions/runner/releases/download/vX.X.X/actions-runner-linux-x64-X.X.X.tar.gz
+tar xzf actions-runner.tar.gz
+./config.sh --url https://github.com/TorikulIslamHira/Yt-Director --token <TOKEN_FROM_GITHUB_PAGE>
 ```
 
-## 3. Clone the repo
+3. Install it as a persistent background service so it survives reboots and
+   keeps polling GitHub for jobs:
 
 ```bash
-mkdir -p /var/www/yt-director
-cd /var/www/yt-director
-git clone https://github.com/TorikulIslamHira/Yt-Director.git .
-cd YT-Director
+sudo ./svc.sh install
+sudo ./svc.sh start
 ```
 
-## 4. Create the production `.env` (never committed to git)
+Confirm it shows up as "Idle" under Settings → Actions → Runners.
+
+## 3. First-time app checkout, `.env`, and PM2 start
+
+The runner keeps its working directory between runs (it's not wiped like
+GitHub-hosted runners), so the checkout persists and becomes your deploy
+directory.
+
+```bash
+cd actions-runner/_work/Yt-Director/Yt-Director/YT-Director   # created after the first workflow run
+```
+
+To create it right away rather than waiting for the first push, just push
+any commit to `main` once — the workflow will check the repo out here
+automatically. Then:
 
 ```bash
 nano .env
@@ -47,8 +71,6 @@ PIXABAY_API_KEY=...
 LOUDLY_API_KEY=...
 ```
 
-## 5. First build and start with PM2
-
 ```bash
 npm ci
 npm run build
@@ -57,53 +79,36 @@ pm2 save
 pm2 startup   # run the command it prints, so PM2 survives a reboot
 ```
 
-`ecosystem.config.js` runs 2 cluster instances, so `pm2 reload` (used by the
-deploy workflow) restarts one instance at a time — the other keeps serving
-traffic, giving zero-downtime deploys.
+`ecosystem.config.js` runs 2 cluster instances on port 3001, so `pm2 reload`
+(used by the deploy workflow) restarts one instance at a time — the other
+keeps serving traffic, giving zero-downtime deploys. From now on, every push
+to `main` reuses this same PM2 process via `pm2 reload`; you don't need to
+run `pm2 start` again.
 
-## 6. nginx reverse proxy
+## 4. Expose it through your existing Cloudflare Tunnel
 
-`/etc/nginx/sites-available/yt-director`:
+Edit your tunnel's config (commonly `~/.cloudflared/config.yml`) and add a
+new ingress rule alongside your existing app's rule — don't remove the
+existing one:
 
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
+```yaml
+ingress:
+  - hostname: your-existing-app-domain.com
+    service: http://localhost:3000   # your existing app, unchanged
+  - hostname: ytdirector.your-domain.com
+    service: http://localhost:3001   # matches the port in ecosystem.config.js
+  - service: http_status:404
 ```
+
+Then point DNS at the tunnel for the new hostname and restart cloudflared:
 
 ```bash
-sudo ln -s /etc/nginx/sites-available/yt-director /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
+cloudflared tunnel route dns <YOUR_TUNNEL_NAME> ytdirector.your-domain.com
+sudo systemctl restart cloudflared
 ```
-
-Optional HTTPS: `sudo apt-get install -y certbot python3-certbot-nginx && sudo certbot --nginx -d your-domain.com`
-
-## 7. Add GitHub repo secrets
-
-Repo → Settings → Secrets and variables → Actions → New repository secret:
-
-| Secret            | Value                                              |
-|-------------------|-----------------------------------------------------|
-| `DEPLOY_HOST`     | Server IP or domain                                  |
-| `DEPLOY_USER`     | `deploy`                                             |
-| `DEPLOY_SSH_KEY`  | Contents of `~/.ssh/gh_actions_key` (private key)    |
-| `DEPLOY_PATH`     | `/var/www/yt-director/YT-Director`                   |
-| `DEPLOY_PORT`     | `22` (optional, only if not the default port)        |
 
 ## Done
 
 From now on: work on `Dev`, merge `Dev` into `main` when ready. The moment
-`main` is updated, GitHub Actions SSHes into the server, pulls the new code,
-rebuilds, and does a zero-downtime `pm2 reload`.
+`main` is updated, the self-hosted runner on your machine picks up the job,
+rebuilds, and does a zero-downtime `pm2 reload` — no SSH, no manual steps.
