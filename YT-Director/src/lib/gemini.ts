@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "./fetch-retry";
+
 const GEMINI_MODEL = "gemini-2.5-flash";
 
 // Rough words-per-minute for spoken narration, used only to size stock clip
@@ -53,7 +55,7 @@ Script:
 ${scriptText}
 """`;
 
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
     {
       method: "POST",
@@ -91,7 +93,12 @@ ${scriptText}
     throw new Error("Gemini থেকে কোনো রেসপন্স পাওয়া যায়নি।");
   }
 
-  const rawScenes: GeminiRawScene[] = JSON.parse(text);
+  let rawScenes: GeminiRawScene[];
+  try {
+    rawScenes = JSON.parse(text);
+  } catch {
+    throw new Error("Gemini থেকে সঠিক ফরম্যাটে ডেটা পাওয়া যায়নি, আবার চেষ্টা করুন।");
+  }
 
   return rawScenes.map((s, i) => ({
     id: `scene-${i + 1}`,

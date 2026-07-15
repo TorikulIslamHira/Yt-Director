@@ -13,7 +13,7 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { saveScriptText } from "@/lib/scene-storage";
+import { saveScriptText, saveProjectId } from "@/lib/scene-storage";
 
 const ACCEPTED_EXTENSIONS = [".doc", ".docx", ".txt", ".pdf"];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -94,6 +94,21 @@ export default function UploadPage() {
       }
 
       saveScriptText(scriptText);
+
+      try {
+        const projectRes = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ scriptText }),
+        });
+        if (projectRes.ok) {
+          const { id } = await projectRes.json();
+          saveProjectId(id);
+        }
+      } catch {
+        // persistence is best-effort — the in-tab flow still works without it
+      }
+
       router.push("/processing");
     } catch {
       setError("কিছু একটা ভুল হয়েছে, আবার চেষ্টা করুন।");

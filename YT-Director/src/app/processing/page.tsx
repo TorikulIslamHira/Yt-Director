@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Circle, AlertCircle, RotateCcw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { loadScriptText, saveScenes } from "@/lib/scene-storage";
+import { loadScriptText, saveScenes, loadProjectId } from "@/lib/scene-storage";
+import type { Scene } from "@/types/scene";
 
 const STEPS = [
   "স্ক্রিপ্ট বিশ্লেষণ হচ্ছে",
@@ -40,6 +41,19 @@ export default function ProcessingPage() {
         if (cancelledRef.current) return;
         setCurrentStep(STEPS.length);
         saveScenes(data.scenes);
+
+        const projectId = loadProjectId();
+        if (projectId) {
+          const scenes: Scene[] = data.scenes;
+          fetch(`/api/projects/${projectId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ scenes }),
+          }).catch(() => {
+            // persistence is best-effort — the in-tab flow still works without it
+          });
+        }
+
         setTimeout(() => {
           if (!cancelledRef.current) router.push("/dashboard");
         }, 400);

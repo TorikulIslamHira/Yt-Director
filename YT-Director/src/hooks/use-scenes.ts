@@ -1,9 +1,9 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { Scene } from "@/types/scene";
+import type { BgmInfo, Scene } from "@/types/scene";
 import { mockScenes } from "@/lib/mock-scenes";
-import { SCENES_STORAGE_KEY } from "@/lib/scene-storage";
+import { SCENES_STORAGE_KEY, PROJECT_ID_KEY, loadBgm } from "@/lib/scene-storage";
 
 function subscribe() {
   return () => {};
@@ -31,4 +31,22 @@ export function useScenes(): { scenes: Scene[]; isDemo: boolean } {
   } catch {
     return { scenes: mockScenes, isDemo: true };
   }
+}
+
+function getBgmSnapshot() {
+  return sessionStorage.getItem("yt-director:bgm");
+}
+
+export function useBgm(): BgmInfo | null {
+  const raw = useSyncExternalStore(subscribe, getBgmSnapshot, getServerSnapshot);
+  if (!raw) return null;
+  return loadBgm();
+}
+
+function getProjectIdSnapshot() {
+  return sessionStorage.getItem(PROJECT_ID_KEY);
+}
+
+export function useProjectId(): string | null {
+  return useSyncExternalStore(subscribe, getProjectIdSnapshot, getServerSnapshot);
 }

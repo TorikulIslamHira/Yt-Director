@@ -18,6 +18,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # actions/checkout defaults to `git clean -ffdx`, which would wipe
+          # YT-Director/data (sqlite db + generated BGM files) on every run.
+          clean-exclude: YT-Director/data
 
       - name: Install dependencies
         run: npm ci

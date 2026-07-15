@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { fetchLoudlyGenres } from "@/lib/loudly";
 
+export const revalidate = 3600;
+
 export async function GET() {
   try {
     const genres = await fetchLoudlyGenres();

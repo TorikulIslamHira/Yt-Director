@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { LoudlyGenre } from "@/lib/loudly";
+import { loadProjectId, saveBgm } from "@/lib/scene-storage";
 
 const DURATION_OPTIONS = [15, 30, 60] as const;
 
@@ -19,10 +20,15 @@ export function GenreGenerateRow({ genre }: { genre: LoudlyGenre }) {
   async function handleGenerate() {
     setStatus("generating");
     try {
+      const projectId = loadProjectId();
       const res = await fetch("/api/generate-bgm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ genre: genre.name, durationSeconds: duration }),
+        body: JSON.stringify({
+          genre: genre.name,
+          durationSeconds: duration,
+          ...(projectId ? { projectId } : {}),
+        }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -31,6 +37,7 @@ export function GenreGenerateRow({ genre }: { genre: LoudlyGenre }) {
       const blob = await res.blob();
       setAudioUrl(URL.createObjectURL(blob));
       setStatus("ready");
+      if (projectId) saveBgm({ genre: genre.name, durationSeconds: duration });
     } catch (err) {
       toast.error((err as Error).message);
       setStatus("error");

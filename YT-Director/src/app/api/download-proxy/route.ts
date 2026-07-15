@@ -11,18 +11,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "অনুমোদিত নয় এমন URL।" }, { status: 400 });
   }
 
-  const upstream = await fetch(url);
-  if (!upstream.ok || !upstream.body) {
-    return NextResponse.json(
-      { error: "ফাইলটি আনা যায়নি।" },
-      { status: 502 }
-    );
-  }
+  try {
+    const upstream = await fetch(url);
+    if (!upstream.ok || !upstream.body) {
+      return NextResponse.json({ error: "ফাইলটি আনা যায়নি।" }, { status: 502 });
+    }
 
-  return new Response(upstream.body, {
-    headers: {
-      "Content-Type": upstream.headers.get("content-type") ?? "application/octet-stream",
-      "Content-Disposition": `attachment; filename="${filename}"`,
-    },
-  });
+    return new Response(upstream.body, {
+      headers: {
+        "Content-Type": upstream.headers.get("content-type") ?? "application/octet-stream",
+        "Content-Disposition": `attachment; filename="${filename}"`,
+      },
+    });
+  } catch {
+    return NextResponse.json({ error: "ফাইলটি আনা যায়নি।" }, { status: 502 });
+  }
 }

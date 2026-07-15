@@ -1,9 +1,12 @@
+import path from "node:path";
+import fs from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { Readable } from "node:stream";
 import { ZipArchive } from "archiver";
 import { buildGuidelineText } from "@/lib/build-guideline";
 import { isAllowedMediaUrl } from "@/lib/allowed-media-hosts";
-import type { Scene } from "@/types/scene";
+import { downloadZipSchema } from "@/lib/validation";
+import { BGM_DIR } from "@/db/client";
 
 export const maxDuration = 120;
 
@@ -14,12 +17,11 @@ function extensionFromUrl(url: string): string {
 }
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const scenes: Scene[] | undefined = body?.scenes;
-
-  if (!Array.isArray(scenes) || scenes.length === 0) {
+  const parsed = downloadZipSchema.safeParse(await req.json());
+  if (!parsed.success) {
     return NextResponse.json({ error: "কোনো দৃশ্য পাওয়া যায়নি।" }, { status: 400 });
   }
+  const { scenes, projectId } = parsed.data;
 
   const archive = new ZipArchive({ zlib: { level: 9 } });
 
@@ -37,6 +39,15 @@ export async function POST(req: NextRequest) {
       archive.append(buffer, { name: `scene-${scene.index}.${ext}` });
     } catch {
       // skip clips that fail to fetch rather than failing the whole zip
+    }
+  }
+
+  if (projectId) {
+    try {
+      const bgmBuffer = await fs.readFile(path.join(BGM_DIR, `${projectId}.mp3`));
+      archive.append(bgmBuffer, { name: "background-music.mp3" });
+    } catch {
+      // no saved bgm for this project — skip
     }
   }
 

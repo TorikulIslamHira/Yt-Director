@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "./fetch-retry";
+
 const LOUDLY_BASE = "https://soundtracks.loudly.com/api/ai";
 
 export type LoudlyGenre = {
@@ -13,7 +15,7 @@ function apiKey(): string {
 }
 
 export async function fetchLoudlyGenres(): Promise<LoudlyGenre[]> {
-  const res = await fetch(`${LOUDLY_BASE}/genres`, {
+  const res = await fetchWithRetry(`${LOUDLY_BASE}/genres`, {
     headers: { "API-KEY": apiKey(), Accept: "application/json" },
   });
   if (!res.ok) {
@@ -32,7 +34,7 @@ export async function generateLoudlyTrack(
   form.append("genre", genre);
   form.append("duration", String(durationSeconds));
 
-  const res = await fetch(`${LOUDLY_BASE}/songs`, {
+  const res = await fetchWithRetry(`${LOUDLY_BASE}/songs`, {
     method: "POST",
     headers: { "API-KEY": apiKey(), Accept: "application/json" },
     body: form,

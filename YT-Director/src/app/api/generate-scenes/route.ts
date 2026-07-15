@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { segmentScript } from "@/lib/gemini";
 import { searchStockVideo } from "@/lib/stock-search";
+import { generateScenesSchema } from "@/lib/validation";
 import type { Scene } from "@/types/scene";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const scriptText: string | undefined = body?.text;
-
-  if (!scriptText || scriptText.trim().length < 20) {
+  const parsed = generateScenesSchema.safeParse(await req.json());
+  if (!parsed.success) {
     return NextResponse.json(
       { error: "স্ক্রিপ্ট টেক্সট পাওয়া যায়নি বা খুব ছোট।" },
       { status: 400 }
     );
   }
+  const scriptText = parsed.data.text;
 
   let segmented;
   try {

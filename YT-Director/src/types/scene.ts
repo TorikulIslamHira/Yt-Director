@@ -17,3 +17,18 @@ export type Scene = {
   aiPrompt: string | null;
   editingNote: string;
 };
+
+export type BgmInfo = {
+  genre: string;
+  durationSeconds: number;
+};
+
+export type Project = {
+  id: string;
+  title: string;
+  scriptText: string;
+  scenes: Scene[];
+  bgm: BgmInfo | null;
+  createdAt: number;
+  updatedAt: number;
+};

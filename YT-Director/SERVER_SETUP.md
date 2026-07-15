@@ -14,9 +14,18 @@ zero-downtime `pm2 reload`.
 
 ```bash
 curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash -
-sudo apt-get install -y nodejs git
+sudo apt-get install -y nodejs git build-essential python3
 sudo npm install -g pm2
 ```
+
+`build-essential`/`python3` are needed because the app uses `better-sqlite3`
+(a native module compiled via node-gyp during `npm ci`) for its local
+project database — everything the app persists (script text, generated
+scenes, BGM tracks) lives in `YT-Director/data/`, a plain SQLite file plus
+generated `.mp3`s. That directory is git-ignored and excluded from the
+deploy workflow's checkout-clean step (see `.github/workflows/deploy.yml`),
+so it survives every deploy — just make sure the runner's user can write to
+`YT-Director/data` (it's created automatically on first run).
 
 ## 2. Install the self-hosted GitHub Actions runner
 

@@ -1,16 +1,20 @@
+import path from "node:path";
+import fs from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { generateLoudlyTrack } from "@/lib/loudly";
+import { generateBgmSchema } from "@/lib/validation";
+import { db, BGM_DIR } from "@/db/client";
+import { projects } from "@/db/schema";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
-  const body = await req.json();
-  const genre: string | undefined = body?.genre;
-  const durationSeconds: number = body?.durationSeconds ?? 30;
-
-  if (!genre) {
-    return NextResponse.json({ error: "genre প্রয়োজন।" }, { status: 400 });
+  const parsed = generateBgmSchema.safeParse(await req.json());
+  if (!parsed.success) {
+    return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
+  const { genre, durationSeconds, projectId } = parsed.data;
 
   let musicFilePath: string;
   try {
@@ -30,7 +34,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  return new Response(audioRes.body, {
+  const audioBuffer = Buffer.from(await audioRes.arrayBuffer());
+
+  if (projectId) {
+    try {
+      await fs.writeFile(path.join(BGM_DIR, `${projectId}.mp3`), audioBuffer);
+      await db
+        .update(projects)
+        .set({ bgm: JSON.stringify({ genre, durationSeconds }), updatedAt: Date.now() })
+        .where(eq(projects.id, projectId));
+    } catch {
+      // persistence is best-effort — the download still succeeds without it
+    }
+  }
+
+  return new Response(audioBuffer, {
     headers: {
       "Content-Type": audioRes.headers.get("content-type") ?? "audio/mpeg",
       "Content-Disposition": `attachment; filename="${genre.toLowerCase().replace(/\s+/g, "-")}.mp3"`,

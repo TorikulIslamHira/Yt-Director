@@ -5,12 +5,14 @@ import { FolderDown, Video, Music, FileText, Download, Loader2 } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { useScenes } from "@/hooks/use-scenes";
+import { useScenes, useBgm, useProjectId } from "@/hooks/use-scenes";
 import { buildGuidelineText } from "@/lib/build-guideline";
 import { downloadBlob, downloadProxyUrl } from "@/lib/download-blob";
 
 export default function DownloadPage() {
   const { scenes, isDemo } = useScenes();
+  const bgm = useBgm();
+  const projectId = useProjectId();
   const stockClips = scenes.filter((s) => s.status === "stock-match");
   const [isZipping, setIsZipping] = useState(false);
 
@@ -20,7 +22,7 @@ export default function DownloadPage() {
       const res = await fetch("/api/download-zip", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scenes }),
+        body: JSON.stringify({ scenes, ...(projectId ? { projectId } : {}) }),
       });
       if (!res.ok) throw new Error("zip failed");
       const blob = await res.blob();
@@ -93,12 +95,20 @@ export default function DownloadPage() {
             <div className="flex min-w-0 items-center gap-2">
               <Music className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
               <span className="truncate text-sm leading-5 text-muted-foreground">
-                BGM &amp; SFX পেজে গিয়ে একটা ট্র্যাক তৈরি করুন
+                {bgm ? `${bgm.genre} — ${bgm.durationSeconds}s (সব ডাউনলোডে অন্তর্ভুক্ত)` : "BGM & SFX পেজে গিয়ে একটা ট্র্যাক তৈরি করুন"}
               </span>
             </div>
-            <Button size="icon-sm" variant="outline" disabled title="আগে BGM & SFX পেজে গিয়ে একটা ট্র্যাক তৈরি করুন">
-              <Download className="size-3.5" strokeWidth={1.75} />
-            </Button>
+            {bgm && projectId ? (
+              <Button size="icon-sm" variant="outline" asChild>
+                <a href={`/api/projects/${projectId}/bgm`} aria-label="ডাউনলোড">
+                  <Download className="size-3.5" strokeWidth={1.75} />
+                </a>
+              </Button>
+            ) : (
+              <Button size="icon-sm" variant="outline" disabled title="আগে BGM & SFX পেজে গিয়ে একটা ট্র্যাক তৈরি করুন">
+                <Download className="size-3.5" strokeWidth={1.75} />
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

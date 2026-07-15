@@ -1,3 +1,5 @@
+import { fetchWithRetry } from "./fetch-retry";
+
 export type RawStockMatch = {
   id: string;
   source: "pexels" | "pixabay";
@@ -25,9 +27,12 @@ type PixabayVideo = {
 
 async function searchPexelsVideo(query: string): Promise<RawStockMatch[]> {
   const apiKey = process.env.PEXELS_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) {
+    console.warn("PEXELS_API_KEY সেট করা নেই — Pexels স্টক সার্চ স্কিপ করা হচ্ছে।");
+    return [];
+  }
 
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `https://api.pexels.com/videos/search?query=${encodeURIComponent(query)}&per_page=4`,
     { headers: { Authorization: apiKey } }
   );
@@ -49,9 +54,12 @@ async function searchPexelsVideo(query: string): Promise<RawStockMatch[]> {
 
 async function searchPixabayVideo(query: string): Promise<RawStockMatch[]> {
   const apiKey = process.env.PIXABAY_API_KEY;
-  if (!apiKey) return [];
+  if (!apiKey) {
+    console.warn("PIXABAY_API_KEY সেট করা নেই — Pixabay স্টক সার্চ স্কিপ করা হচ্ছে।");
+    return [];
+  }
 
-  const res = await fetch(
+  const res = await fetchWithRetry(
     `https://pixabay.com/api/videos/?key=${apiKey}&q=${encodeURIComponent(query)}&per_page=4`
   );
   if (!res.ok) return [];
