@@ -12,7 +12,7 @@ This is the data-flow contract the frontend screens are built against. Actual se
 3. **Stock match (Pexels + Pixabay, video only)** — for each scene, search both APIs by `searchKeywords`, video results only (no photo fallback).
    - Match found → return top 3–4 video download links, closest in duration to `estimatedDurationSeconds`.
    - No match found → fall back to an **AI-prompt suggestion**: Gemini generates a text-to-video prompt for that scene, shown with a "copy prompt" action so the editor can run it through an external AI video generator. This is why the Scene Review Dashboard card needs both a "stock match" badge state and an "AI-prompt" badge state (already anticipated in the original UX plan, §1.2.4).
-4. **BGM** — Loudly API generates one mood/genre-based background track for the whole video (mood derived from overall script tone by Gemini), returned as a download link.
+4. **BGM** — planned via ElevenLabs (Loudly was removed 2026-07-16 — dropped account, no longer used). Not wired yet; `/bgm` page shows a placeholder.
 5. **SFX (scene-transition sounds)** — **skipped for now.** No API key provided; UI should leave a clearly labeled placeholder/disabled state, not fake data. Revisit source (Pixabay Audio / Freesound / Zapsplat) later.
 6. **Editing Guideline** — list-style (not timeline, per earlier decision), scene-by-scene: each entry shows the chosen stock clip or AI prompt, duration, and any generated editing note.
 7. **Download Center** — bundles stock clips + BGM + guideline doc into one zip ("Download All") plus individual per-file downloads. Fetching third-party media server-side and zipping is backend work (Main Task 2) — the frontend only needs the UI for it now.
@@ -23,7 +23,7 @@ This is the data-flow contract the frontend screens are built against. Actual se
 - Voice timing: **estimate only**, no TTS audio generation.
 - Stock media: **video-only**, no photo fallback; no-match scenes get an AI-generation prompt instead.
 - SFX: out of scope for now — placeholder UI only.
-- Third-party keys in use: Pexels, Pixabay, Loudly — stored in `YT-Director/.env.local` (gitignored, never commit).
+- Third-party keys in use: Pexels, Pixabay, Gemini — stored in `.env.local` at repo root (gitignored, never commit). ElevenLabs key needed once BGM work starts.
 
 ## Open items before Main Task 2 starts
 

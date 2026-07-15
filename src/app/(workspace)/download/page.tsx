@@ -1,13 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { FolderDown, Video, Music, FileText, Download, Loader2 } from "lucide-react";
+import { FolderDown, Video, Music, FileText, Captions, Clapperboard, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useScenes, useBgm, useProjectId } from "@/hooks/use-scenes";
 import { buildGuidelineText } from "@/lib/build-guideline";
+import { buildSrt } from "@/lib/build-captions";
+import { buildFcpxml } from "@/lib/build-fcpxml";
 import { downloadBlob, downloadProxyUrl } from "@/lib/client/download-blob";
+import { VideoMetadataCard } from "@/components/download/video-metadata-card";
 
 export default function DownloadPage() {
   const { scenes, isDemo } = useScenes();
@@ -27,6 +30,16 @@ export default function DownloadPage() {
       if (!res.ok) throw new Error("zip failed");
       const blob = await res.blob();
       downloadBlob(blob, "yt-director-export.zip");
+
+      if (projectId) {
+        fetch(`/api/projects/${projectId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: "editing" }),
+        }).catch(() => {
+          // best-effort — the download itself already succeeded
+        });
+      }
     } finally {
       setIsZipping(false);
     }
@@ -35,6 +48,16 @@ export default function DownloadPage() {
   function handleDownloadGuideline() {
     const text = buildGuidelineText(scenes);
     downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), "editing-guideline.txt");
+  }
+
+  function handleDownloadCaptions() {
+    const text = buildSrt(scenes);
+    downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), "captions.srt");
+  }
+
+  function handleDownloadTimeline() {
+    const text = buildFcpxml(scenes);
+    downloadBlob(new Blob([text], { type: "application/xml;charset=utf-8" }), "timeline.fcpxml");
   }
 
   return (
@@ -113,6 +136,8 @@ export default function DownloadPage() {
         </CardContent>
       </Card>
 
+      <VideoMetadataCard />
+
       <Card>
         <CardContent className="space-y-2">
           <p className="text-sm leading-5 font-medium">এডিটিং গাইডলাইন ডকুমেন্ট</p>
@@ -122,6 +147,36 @@ export default function DownloadPage() {
               <span className="truncate text-sm leading-5">editing-guideline.txt</span>
             </div>
             <Button size="icon-sm" variant="outline" onClick={handleDownloadGuideline} aria-label="ডাউনলোড">
+              <Download className="size-3.5" strokeWidth={1.75} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-2">
+          <p className="text-sm leading-5 font-medium">ক্যাপশন ফাইল (আনুমানিক সময়)</p>
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <Captions className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+              <span className="truncate text-sm leading-5">captions.srt</span>
+            </div>
+            <Button size="icon-sm" variant="outline" onClick={handleDownloadCaptions} aria-label="ডাউনলোড">
+              <Download className="size-3.5" strokeWidth={1.75} />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="space-y-2">
+          <p className="text-sm leading-5 font-medium">টাইমলাইন (Premiere/DaVinci Resolve-এ import করুন)</p>
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+            <div className="flex min-w-0 items-center gap-2">
+              <Clapperboard className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
+              <span className="truncate text-sm leading-5">timeline.fcpxml</span>
+            </div>
+            <Button size="icon-sm" variant="outline" onClick={handleDownloadTimeline} aria-label="ডাউনলোড">
               <Download className="size-3.5" strokeWidth={1.75} />
             </Button>
           </div>

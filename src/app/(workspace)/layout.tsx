@@ -20,7 +20,7 @@ export default function WorkspaceLayout({
 
   return (
     <div className="flex flex-1 flex-col">
-      <nav className="border-b border-border">
+      <nav className="no-print border-b border-border">
         <div className="mx-auto flex w-full max-w-7xl gap-1 overflow-x-auto px-4 md:px-6">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href;

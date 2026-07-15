@@ -29,10 +29,8 @@ export const generateScenesSchema = z.object({
   text: z.string().min(20),
 });
 
-export const generateBgmSchema = z.object({
-  genre: z.string().min(1),
-  durationSeconds: z.number().int().positive().default(30),
-  projectId: z.string().optional(),
+export const generateMetadataSchema = z.object({
+  scriptText: z.string().min(20),
 });
 
 export const downloadZipSchema = z.object({
@@ -42,13 +40,20 @@ export const downloadZipSchema = z.object({
 
 export const createProjectSchema = z.object({
   scriptText: z.string().min(20),
+  title: z.string().trim().min(1).max(120).optional(),
 });
 
 export const updateProjectSchema = z
   .object({
     scenes: z.array(sceneSchema).optional(),
     bgm: bgmInfoSchema.optional(),
+    status: z.enum(["draft", "editing", "completed"]).optional(),
   })
-  .refine((data) => data.scenes !== undefined || data.bgm !== undefined, {
-    message: "scenes বা bgm এর একটি অন্তত দিতে হবে।",
+  .refine((data) => data.scenes !== undefined || data.bgm !== undefined || data.status !== undefined, {
+    message: "scenes, bgm বা status এর একটি অন্তত দিতে হবে।",
   });
+
+export const addPostedLinkSchema = z.object({
+  url: z.string().trim().url("সঠিক একটা লিংক দিন।"),
+  platform: z.enum(["youtube", "facebook", "other"]),
+});

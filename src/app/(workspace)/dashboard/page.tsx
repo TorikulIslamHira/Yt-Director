@@ -22,8 +22,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {scenes.map((scene) => (
-          <SceneCard key={scene.id} scene={scene} />
+        {scenes.map((scene, i) => (
+          <SceneCard key={scene.id} scene={scene} isFirst={i === 0} isLast={i === scenes.length - 1} />
         ))}
       </div>
     </main>

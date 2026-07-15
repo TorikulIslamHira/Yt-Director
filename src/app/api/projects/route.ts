@@ -4,20 +4,31 @@ import { desc } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { createProjectSchema } from "@/lib/validation";
-import { titleFromScript } from "@/lib/projects";
+import { titleFromScript, postedLinksFromRow } from "@/lib/projects";
 
 export async function GET() {
   const rows = await db
     .select({
       id: projects.id,
       title: projects.title,
+      status: projects.status,
+      postedUrl: projects.postedUrl,
+      postedPlatform: projects.postedPlatform,
+      postedLinks: projects.postedLinks,
+      completedAt: projects.completedAt,
+      generationStatus: projects.generationStatus,
       createdAt: projects.createdAt,
       updatedAt: projects.updatedAt,
     })
     .from(projects)
     .orderBy(desc(projects.updatedAt));
 
-  return NextResponse.json({ projects: rows });
+  const summaries = rows.map(({ postedUrl, postedPlatform, ...row }) => ({
+    ...row,
+    postedLinks: postedLinksFromRow({ ...row, postedUrl, postedPlatform }),
+  }));
+
+  return NextResponse.json({ projects: summaries });
 }
 
 export async function POST(req: NextRequest) {
@@ -31,10 +42,11 @@ export async function POST(req: NextRequest) {
 
   await db.insert(projects).values({
     id,
-    title: titleFromScript(parsed.data.scriptText),
+    title: parsed.data.title || titleFromScript(parsed.data.scriptText),
     scriptText: parsed.data.scriptText,
     scenes: "[]",
     bgm: null,
+    status: "draft",
     createdAt: now,
     updatedAt: now,
   });

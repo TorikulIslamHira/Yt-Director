@@ -29,6 +29,19 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   if (parsed.data.scenes) updates.scenes = JSON.stringify(parsed.data.scenes);
   if (parsed.data.bgm) updates.bgm = JSON.stringify(parsed.data.bgm);
 
+  if (parsed.data.status) {
+    const current = await db.query.projects.findFirst({ where: eq(projects.id, id) });
+    if (!current) {
+      return NextResponse.json({ error: "প্রজেক্ট পাওয়া যায়নি।" }, { status: 404 });
+    }
+    // Never let a plain status PATCH move a project backward (e.g. re-downloading
+    // shouldn't downgrade an already-completed project back to "editing").
+    const rank: Record<string, number> = { draft: 0, editing: 1, completed: 2 };
+    if (rank[parsed.data.status] > rank[current.status]) {
+      updates.status = parsed.data.status;
+    }
+  }
+
   const result = await db.update(projects).set(updates).where(eq(projects.id, id)).returning();
   if (result.length === 0) {
     return NextResponse.json({ error: "প্রজেক্ট পাওয়া যায়নি।" }, { status: 404 });

@@ -23,12 +23,29 @@ export type BgmInfo = {
   durationSeconds: number;
 };
 
+export type ProjectStatus = "draft" | "editing" | "completed";
+
+export type PostedPlatform = "youtube" | "facebook" | "other";
+
+export type PostedLink = {
+  platform: PostedPlatform;
+  url: string;
+  addedAt: number;
+};
+
+export type GenerationStatus = "idle" | "generating" | "done" | "error";
+
 export type Project = {
   id: string;
   title: string;
   scriptText: string;
   scenes: Scene[];
   bgm: BgmInfo | null;
+  status: ProjectStatus;
+  postedLinks: PostedLink[];
+  completedAt: number | null;
+  generationStatus: GenerationStatus;
+  generationError: string | null;
   createdAt: number;
   updatedAt: number;
 };

@@ -110,3 +110,68 @@ ${scriptText}
     aiPrompt: s.aiPrompt,
   }));
 }
+
+export type VideoMetadata = {
+  titles: string[];
+  description: string;
+  tags: string[];
+};
+
+export async function generateVideoMetadata(scriptText: string): Promise<VideoMetadata> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY সেট করা নেই।");
+  }
+
+  const prompt = `You are a YouTube SEO assistant. Based on the following video script, write publish-ready metadata, in the same language as the script:
+- "titles": exactly 3 distinct compelling, click-worthy YouTube title options (max ~70 characters each) — vary the angle/hook between them so they're genuinely different choices, not near-duplicates
+- "description": a 2-4 sentence YouTube description summarizing the video and inviting engagement
+- "tags": 8-15 relevant search tags/keywords as an array of short strings
+
+Return ONLY a JSON object, no prose, no markdown fences.
+
+Script:
+"""
+${scriptText}
+"""`;
+
+  const res = await fetchWithRetry(
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: "OBJECT",
+            properties: {
+              titles: { type: "ARRAY", items: { type: "STRING" } },
+              description: { type: "STRING" },
+              tags: { type: "ARRAY", items: { type: "STRING" } },
+            },
+            required: ["titles", "description", "tags"],
+          },
+        },
+      }),
+    }
+  );
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Gemini API error (${res.status}): ${errBody}`);
+  }
+
+  const data = await res.json();
+  const text: string | undefined = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error("Gemini থেকে কোনো রেসপন্স পাওয়া যায়নি।");
+  }
+
+  try {
+    return JSON.parse(text) as VideoMetadata;
+  } catch {
+    throw new Error("Gemini থেকে সঠিক ফরম্যাটে ডেটা পাওয়া যায়নি, আবার চেষ্টা করুন।");
+  }
+}

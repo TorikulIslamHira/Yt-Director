@@ -7,13 +7,15 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { loadScriptText, saveScenes, loadProjectId } from "@/lib/client/scene-storage";
 import { fetchJson } from "@/lib/client/fetch-json";
-import type { Scene } from "@/types/scene";
+import type { Project, Scene } from "@/types/scene";
 
 const STEPS = [
   "স্ক্রিপ্ট বিশ্লেষণ হচ্ছে",
   "দৃশ্য অনুযায়ী স্টক ফুটেজ খোঁজা হচ্ছে",
   "চূড়ান্ত করা হচ্ছে",
 ] as const;
+
+const POLL_INTERVAL_MS = 2000;
 
 export default function ProcessingPage() {
   const router = useRouter();
@@ -23,46 +25,80 @@ export default function ProcessingPage() {
   const cancelledRef = useRef(false);
 
   useEffect(() => {
-    const scriptText = loadScriptText();
-    if (!scriptText) {
-      router.replace("/");
-      return;
+    cancelledRef.current = false;
+    let pollTimer: ReturnType<typeof setTimeout> | undefined;
+
+    function finish(scenes: Scene[]) {
+      if (cancelledRef.current) return;
+      setCurrentStep(STEPS.length);
+      saveScenes(scenes);
+      setTimeout(() => {
+        if (!cancelledRef.current) router.push("/dashboard");
+      }, 400);
     }
 
-    cancelledRef.current = false;
-
-    fetchJson<{ scenes: Scene[] }>("/api/generate-scenes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text: scriptText }),
-    })
-      .then(async (data) => {
+    async function poll(projectId: string) {
+      if (cancelledRef.current) return;
+      try {
+        const { project } = await fetchJson<{ project: Project }>(`/api/projects/${projectId}`);
         if (cancelledRef.current) return;
-        setCurrentStep(STEPS.length);
-        saveScenes(data.scenes);
 
-        const projectId = loadProjectId();
-        if (projectId) {
-          const scenes: Scene[] = data.scenes;
-          fetch(`/api/projects/${projectId}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ scenes }),
-          }).catch(() => {
-            // persistence is best-effort — the in-tab flow still works without it
-          });
+        if (project.generationStatus === "done") {
+          finish(project.scenes);
+          return;
         }
+        if (project.generationStatus === "error") {
+          setError(project.generationError ?? "স্ক্রিপ্ট বিশ্লেষণ ব্যর্থ হয়েছে।");
+          return;
+        }
+        pollTimer = setTimeout(() => poll(projectId), POLL_INTERVAL_MS);
+      } catch (err) {
+        if (!cancelledRef.current) setError((err as Error).message);
+      }
+    }
 
-        setTimeout(() => {
-          if (!cancelledRef.current) router.push("/dashboard");
-        }, 400);
-      })
-      .catch((err: Error) => {
-        if (!cancelledRef.current) setError(err.message);
-      });
+    async function runViaProject(projectId: string) {
+      // Kick off (or resume) the server-side job — fire-and-forget on the
+      // server, so this survives a closed tab. Kickoff itself is best-effort:
+      // if it fails transiently the poll loop below will still catch a real
+      // problem via generationStatus, so we don't hard-fail here.
+      try {
+        await fetch(`/api/projects/${projectId}/generate`, { method: "POST" });
+      } catch {
+        // ignore
+      }
+      setCurrentStep(2);
+      poll(projectId);
+    }
+
+    async function runWithoutProject(scriptText: string) {
+      try {
+        const data = await fetchJson<{ scenes: Scene[] }>("/api/generate-scenes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: scriptText }),
+        });
+        finish(data.scenes);
+      } catch (err) {
+        if (!cancelledRef.current) setError((err as Error).message);
+      }
+    }
+
+    const projectId = loadProjectId();
+    if (projectId) {
+      runViaProject(projectId);
+    } else {
+      const scriptText = loadScriptText();
+      if (!scriptText) {
+        router.replace("/");
+      } else {
+        runWithoutProject(scriptText);
+      }
+    }
 
     return () => {
       cancelledRef.current = true;
+      if (pollTimer) clearTimeout(pollTimer);
     };
   }, [router, attempt]);
 

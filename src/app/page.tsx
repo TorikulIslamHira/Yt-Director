@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { UploadCloud, FileText, X, AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -15,6 +17,7 @@ import {
 } from "@/components/ui/card";
 import { saveScriptText, saveProjectId } from "@/lib/client/scene-storage";
 import { fetchJson } from "@/lib/client/fetch-json";
+import { BatchUploadPanel } from "@/components/upload/batch-upload-panel";
 
 const ACCEPTED_EXTENSIONS = [".doc", ".docx", ".txt", ".pdf"];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -30,8 +33,9 @@ export default function UploadPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [file, setFile] = useState<File | null>(null);
+  const [projectName, setProjectName] = useState("");
   const [pastedText, setPastedText] = useState("");
-  const [activeTab, setActiveTab] = useState<"file" | "paste">("file");
+  const [activeTab, setActiveTab] = useState<"file" | "paste" | "batch">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -98,10 +102,11 @@ export default function UploadPage() {
       saveScriptText(scriptText);
 
       try {
+        const title = projectName.trim();
         const { id } = await fetchJson<{ id: string }>("/api/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ scriptText }),
+          body: JSON.stringify({ scriptText, ...(title ? { title } : {}) }),
         });
         saveProjectId(id);
       } catch {
@@ -124,6 +129,19 @@ export default function UploadPage() {
         </p>
       </div>
 
+      {activeTab !== "batch" && (
+        <div className="space-y-1.5">
+          <Label htmlFor="project-name">প্রজেক্টের নাম (ঐচ্ছিক)</Label>
+          <Input
+            id="project-name"
+            value={projectName}
+            onChange={(e) => setProjectName(e.target.value)}
+            placeholder="খালি রাখলে স্ক্রিপ্ট থেকে স্বয়ংক্রিয়ভাবে নেওয়া হবে"
+            maxLength={120}
+          />
+        </div>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle>Script</CardTitle>
@@ -133,7 +151,7 @@ export default function UploadPage() {
           <Tabs
             value={activeTab}
             onValueChange={(v) => {
-              setActiveTab(v as "file" | "paste");
+              setActiveTab(v as "file" | "paste" | "batch");
               setError(null);
             }}
           >
@@ -143,6 +161,9 @@ export default function UploadPage() {
               </TabsTrigger>
               <TabsTrigger value="paste" className="flex-1">
                 টেক্সট পেস্ট
+              </TabsTrigger>
+              <TabsTrigger value="batch" className="flex-1">
+                একাধিক স্ক্রিপ্ট
               </TabsTrigger>
             </TabsList>
 
@@ -216,6 +237,10 @@ export default function UploadPage() {
                 {pastedText.trim().length} ক্যারেক্টার
               </p>
             </TabsContent>
+
+            <TabsContent value="batch" className="mt-4">
+              <BatchUploadPanel />
+            </TabsContent>
           </Tabs>
 
           {error && (
@@ -227,15 +252,17 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
-      <Button
-        size="lg"
-        className="w-full"
-        disabled={!canSubmit || isSubmitting}
-        onClick={handleSubmit}
-      >
-        {isSubmitting && <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />}
-        স্ক্রিপ্ট প্রসেস করুন
-      </Button>
+      {activeTab !== "batch" && (
+        <Button
+          size="lg"
+          className="w-full"
+          disabled={!canSubmit || isSubmitting}
+          onClick={handleSubmit}
+        >
+          {isSubmitting && <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />}
+          স্ক্রিপ্ট প্রসেস করুন
+        </Button>
+      )}
     </main>
   );
 }

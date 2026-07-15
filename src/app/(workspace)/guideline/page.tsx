@@ -1,7 +1,8 @@
 "use client";
 
-import { ListChecks, Clock } from "lucide-react";
+import { ListChecks, Clock, Printer } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useScenes } from "@/hooks/use-scenes";
 
@@ -11,12 +12,18 @@ export default function GuidelinePage() {
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="flex items-center gap-2 text-2xl leading-8 font-semibold">
-            <ListChecks className="size-5" strokeWidth={1.75} />
-            এডিটিং গাইডলাইন
-          </h1>
-          {isDemo && <Badge variant="secondary">ডেমো ডেটা</Badge>}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="flex items-center gap-2 text-2xl leading-8 font-semibold">
+              <ListChecks className="size-5" strokeWidth={1.75} />
+              এডিটিং গাইডলাইন
+            </h1>
+            {isDemo && <Badge variant="secondary">ডেমো ডেটা</Badge>}
+          </div>
+          <Button size="sm" variant="outline" className="no-print" onClick={() => window.print()}>
+            <Printer className="size-4" strokeWidth={1.75} />
+            PDF ডাউনলোড
+          </Button>
         </div>
         <p className="text-sm leading-5 text-muted-foreground">
           দৃশ্য অনুযায়ী ধারাবাহিক নির্দেশনা — উপর থেকে নিচে অনুসরণ করুন।

@@ -2,16 +2,31 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Copy, Download, ImageOff, Clock } from "lucide-react";
+import { Copy, Download, ImageOff, Clock, MoreVertical, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { SceneDetailDialog } from "@/components/scene-review/scene-detail-dialog";
 import { downloadProxyUrl } from "@/lib/client/download-blob";
+import { mutateScenes } from "@/lib/client/scene-storage";
 import type { Scene } from "@/types/scene";
 
-export function SceneCard({ scene }: { scene: Scene }) {
+export function SceneCard({
+  scene,
+  isFirst,
+  isLast,
+}: {
+  scene: Scene;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
   const [detailOpen, setDetailOpen] = useState(false);
   const isMatch = scene.status === "stock-match";
   const thumbnail = scene.stockMatches[0]?.thumbnailUrl;
@@ -20,6 +35,28 @@ export function SceneCard({ scene }: { scene: Scene }) {
     if (!scene.aiPrompt) return;
     await navigator.clipboard.writeText(scene.aiPrompt);
     toast.success("প্রম্পট কপি হয়েছে");
+  }
+
+  async function handleMove(direction: "up" | "down") {
+    const result = await mutateScenes((scenes) => {
+      const i = scenes.findIndex((s) => s.id === scene.id);
+      const j = direction === "up" ? i - 1 : i + 1;
+      if (i < 0 || j < 0 || j >= scenes.length) return scenes;
+      const next = [...scenes];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+    if (result === null) toast.error("ডেমো ডেটাতে সাজানো যাবে না।");
+  }
+
+  async function handleDelete() {
+    if (!confirm(`"${scene.title}" দৃশ্যটা মুছে ফেলতে চান?`)) return;
+    const result = await mutateScenes((scenes) => scenes.filter((s) => s.id !== scene.id));
+    if (result === null) {
+      toast.error("ডেমো ডেটাতে মুছে ফেলা যাবে না।");
+    } else {
+      toast.success("দৃশ্যটা মুছে ফেলা হয়েছে");
+    }
   }
 
   return (
@@ -39,6 +76,32 @@ export function SceneCard({ scene }: { scene: Scene }) {
           >
             {isMatch ? "স্টক ম্যাচ" : "এআই প্রম্পট"}
           </Badge>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size="icon-sm"
+                variant="outline"
+                className="absolute top-2 right-2 bg-card"
+                aria-label="দৃশ্য অপশন"
+              >
+                <MoreVertical className="size-3.5" strokeWidth={1.75} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem disabled={isFirst} onSelect={() => handleMove("up")}>
+                <ArrowUp className="size-4" strokeWidth={1.75} />
+                উপরে সরান
+              </DropdownMenuItem>
+              <DropdownMenuItem disabled={isLast} onSelect={() => handleMove("down")}>
+                <ArrowDown className="size-4" strokeWidth={1.75} />
+                নিচে সরান
+              </DropdownMenuItem>
+              <DropdownMenuItem variant="destructive" onSelect={handleDelete}>
+                <Trash2 className="size-4" strokeWidth={1.75} />
+                মুছে ফেলুন
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <CardContent className="space-y-1.5 pt-4">

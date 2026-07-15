@@ -13,9 +13,6 @@ jobs:
   ci:
     name: Lint, typecheck, build
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: YT-Director
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,7 +22,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: YT-Director/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -47,19 +44,16 @@ jobs:
     concurrency:
       group: production-deploy
       cancel-in-progress: false
-    defaults:
-      run:
-        working-directory: YT-Director
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           # actions/checkout defaults to `git clean -ffdx`, which would wipe
-          # YT-Director/data (sqlite db + generated BGM files) and the
-          # server's YT-Director/.env (API keys) on every run.
+          # data/ (sqlite db + generated BGM files) and the server's
+          # .env (API keys) on every run.
           clean-exclude: |
-            YT-Director/data
-            YT-Director/.env*
+            data
+            .env*
 
       - name: Install dependencies
         run: npm ci

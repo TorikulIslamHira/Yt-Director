@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { Readable } from "node:stream";
 import { ZipArchive } from "archiver";
 import { buildGuidelineText } from "@/lib/build-guideline";
+import { buildSrt } from "@/lib/build-captions";
+import { buildFcpxml } from "@/lib/build-fcpxml";
 import { isAllowedMediaUrl } from "@/lib/allowed-media-hosts";
 import { downloadZipSchema } from "@/lib/validation";
 import { BGM_DIR } from "@/db/client";
@@ -26,6 +28,8 @@ export async function POST(req: NextRequest) {
   const archive = new ZipArchive({ zlib: { level: 9 } });
 
   archive.append(buildGuidelineText(scenes), { name: "editing-guideline.txt" });
+  archive.append(buildSrt(scenes), { name: "captions.srt" });
+  archive.append(buildFcpxml(scenes), { name: "timeline.fcpxml" });
 
   for (const scene of scenes) {
     const match = scene.stockMatches[0];

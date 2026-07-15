@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { Copy, Download, Clock } from "lucide-react";
+import { Copy, Download, Clock, Check, Loader2, Save } from "lucide-react";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -12,8 +13,10 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { downloadProxyUrl } from "@/lib/client/download-blob";
-import type { Scene } from "@/types/scene";
+import { mutateScenes } from "@/lib/client/scene-storage";
+import type { Scene, StockMatch } from "@/types/scene";
 
 export function SceneDetailDialog({
   scene,
@@ -24,10 +27,50 @@ export function SceneDetailDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const [note, setNote] = useState(scene.editingNote);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isSelectingClip, setIsSelectingClip] = useState<string | null>(null);
+
   async function handleCopyPrompt() {
     if (!scene.aiPrompt) return;
     await navigator.clipboard.writeText(scene.aiPrompt);
     toast.success("প্রম্পট কপি হয়েছে");
+  }
+
+  async function handleSaveNote() {
+    setIsSaving(true);
+    try {
+      const result = await mutateScenes((scenes) =>
+        scenes.map((s) => (s.id === scene.id ? { ...s, editingNote: note } : s))
+      );
+      if (result === null) {
+        toast.error("ডেমো ডেটাতে নোট সেভ করা যাবে না।");
+      } else {
+        toast.success("নোট সেভ হয়েছে");
+      }
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function handleSelectClip(match: StockMatch) {
+    setIsSelectingClip(match.id);
+    try {
+      const result = await mutateScenes((scenes) =>
+        scenes.map((s) =>
+          s.id === scene.id
+            ? { ...s, stockMatches: [match, ...s.stockMatches.filter((m) => m.id !== match.id)] }
+            : s
+        )
+      );
+      if (result === null) {
+        toast.error("ডেমো ডেটাতে ক্লিপ বেছে নেওয়া যাবে না।");
+      } else {
+        toast.success("এই ক্লিপটা এখন প্রধান ক্লিপ হিসেবে সেট হয়েছে");
+      }
+    } finally {
+      setIsSelectingClip(null);
+    }
   }
 
   return (
@@ -54,7 +97,7 @@ export function SceneDetailDialog({
           <div className="space-y-2">
             <p className="text-sm leading-5 font-medium">বিকল্প স্টক ম্যাচ</p>
             <div className="grid grid-cols-2 gap-2">
-              {scene.stockMatches.map((match) => (
+              {scene.stockMatches.map((match, i) => (
                 <div key={match.id} className="space-y-1.5">
                   <div className="relative aspect-video overflow-hidden rounded-md bg-muted">
                     <Image
@@ -64,19 +107,41 @@ export function SceneDetailDialog({
                       className="object-cover"
                       unoptimized
                     />
+                    {i === 0 && (
+                      <Badge className="absolute top-1.5 left-1.5">
+                        <Check className="size-3" strokeWidth={1.75} />
+                        নির্বাচিত
+                      </Badge>
+                    )}
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-xs leading-4 text-muted-foreground capitalize">
                       {match.source} · {match.durationSeconds}s
                     </span>
-                    <Button size="icon-sm" variant="outline" asChild>
-                      <a
-                        href={downloadProxyUrl(match.downloadUrl, `${match.source}-${match.id}.mp4`)}
-                        aria-label="ডাউনলোড"
-                      >
-                        <Download className="size-3.5" strokeWidth={1.75} />
-                      </a>
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {i !== 0 && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={isSelectingClip !== null}
+                          onClick={() => handleSelectClip(match)}
+                        >
+                          {isSelectingClip === match.id ? (
+                            <Loader2 className="size-3.5 animate-spin" strokeWidth={1.75} />
+                          ) : (
+                            "বেছে নিন"
+                          )}
+                        </Button>
+                      )}
+                      <Button size="icon-sm" variant="outline" asChild>
+                        <a
+                          href={downloadProxyUrl(match.downloadUrl, `${match.source}-${match.id}.mp4`)}
+                          aria-label="ডাউনলোড"
+                        >
+                          <Download className="size-3.5" strokeWidth={1.75} />
+                        </a>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -95,12 +160,23 @@ export function SceneDetailDialog({
           </div>
         )}
 
-        {scene.editingNote && (
-          <div className="space-y-1">
-            <p className="text-sm leading-5 font-medium">এডিটিং নোট</p>
-            <p className="text-sm leading-5 text-muted-foreground">{scene.editingNote}</p>
-          </div>
-        )}
+        <div className="space-y-1.5">
+          <p className="text-sm leading-5 font-medium">এডিটিং নোট</p>
+          <Textarea
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            placeholder="এই দৃশ্যের জন্য একটা এডিটিং নোট লিখুন..."
+            className="min-h-20 resize-y"
+          />
+          <Button size="sm" variant="outline" disabled={isSaving} onClick={handleSaveNote}>
+            {isSaving ? (
+              <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />
+            ) : (
+              <Save className="size-4" strokeWidth={1.75} />
+            )}
+            নোট সেভ করুন
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );
