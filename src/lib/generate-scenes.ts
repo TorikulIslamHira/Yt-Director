@@ -1,9 +1,11 @@
 import { segmentScript } from "@/lib/integrations/gemini";
 import { searchStockVideo } from "@/lib/integrations/stock-search";
+import { getSettings } from "@/lib/settings";
 import type { Scene } from "@/types/scene";
 
 export async function generateScenesForScript(scriptText: string): Promise<Scene[]> {
-  const segmented = await segmentScript(scriptText);
+  const { readingSpeedBn, readingSpeedEn } = await getSettings();
+  const segmented = await segmentScript(scriptText, { bn: readingSpeedBn, en: readingSpeedEn });
 
   return Promise.all(
     segmented.map(async (s) => {

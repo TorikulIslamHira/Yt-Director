@@ -35,6 +35,11 @@ export type PostedLink = {
 
 export type GenerationStatus = "idle" | "generating" | "done" | "error";
 
+export type ProjectVersion = {
+  scenes: Scene[];
+  savedAt: number;
+};
+
 export type Project = {
   id: string;
   title: string;
@@ -46,6 +51,12 @@ export type Project = {
   completedAt: number | null;
   generationStatus: GenerationStatus;
   generationError: string | null;
+  previousVersions: ProjectVersion[];
   createdAt: number;
   updatedAt: number;
+};
+
+export type AppSettings = {
+  readingSpeedBn: number;
+  readingSpeedEn: number;
 };

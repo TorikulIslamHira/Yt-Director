@@ -5,6 +5,7 @@ import type {
   PostedPlatform,
   Project,
   ProjectStatus,
+  ProjectVersion,
   Scene,
 } from "@/types/scene";
 import type { ProjectRow } from "@/db/schema";
@@ -68,6 +69,13 @@ export function rowToProject(row: ProjectRow): Project {
     ? (row.generationStatus as GenerationStatus)
     : "idle";
 
+  let previousVersions: ProjectVersion[] = [];
+  try {
+    previousVersions = JSON.parse(row.previousVersions || "[]") as ProjectVersion[];
+  } catch {
+    previousVersions = [];
+  }
+
   return {
     id: row.id,
     title: row.title,
@@ -79,6 +87,7 @@ export function rowToProject(row: ProjectRow): Project {
     completedAt: row.completedAt ?? null,
     generationStatus,
     generationError: row.generationError ?? null,
+    previousVersions,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

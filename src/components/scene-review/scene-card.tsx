@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Copy, Download, ImageOff, Clock, MoreVertical, ArrowUp, ArrowDown, Trash2 } from "lucide-react";
+import { Copy, Download, ImageOff, Clock, MoreVertical, ArrowUp, ArrowDown, Trash2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,10 +22,12 @@ export function SceneCard({
   scene,
   isFirst,
   isLast,
+  isDuplicateClip,
 }: {
   scene: Scene;
   isFirst: boolean;
   isLast: boolean;
+  isDuplicateClip?: boolean;
 }) {
   const [detailOpen, setDetailOpen] = useState(false);
   const isMatch = scene.status === "stock-match";
@@ -105,9 +107,17 @@ export function SceneCard({
         </div>
 
         <CardContent className="space-y-1.5 pt-4">
-          <p className="text-sm leading-5 font-medium">
-            {scene.index}. {scene.title}
-          </p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm leading-5 font-medium">
+              {scene.index}. {scene.title}
+            </p>
+            {isDuplicateClip && (
+              <Badge variant="secondary" className="shrink-0 text-warning">
+                <AlertTriangle className="size-3" strokeWidth={1.75} />
+                ডুপ্লিকেট
+              </Badge>
+            )}
+          </div>
           <p className="line-clamp-2 text-xs leading-4 text-muted-foreground">
             {scene.description}
           </p>

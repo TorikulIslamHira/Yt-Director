@@ -63,10 +63,20 @@ secret` on GitHub and add:
 GEMINI_API_KEY
 PEXELS_API_KEY
 PIXABAY_API_KEY
+TELEGRAM_BOT_TOKEN
+TELEGRAM_CHAT_ID
 ```
 
 (Loudly was removed 2026-07-16 — no key needed. BGM is planned via
 ElevenLabs — add an `ELEVENLABS_API_KEY` secret here once that's wired.)
+
+`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` (added 2026-07-16) power optional
+Telegram notifications — sent when scene generation finishes/fails and when
+a project is marked complete (see `src/lib/integrations/telegram.ts`). If
+either is unset, notifications are silently skipped; nothing else depends
+on them. To get a chat ID: message your bot once in Telegram, then hit
+`https://api.telegram.org/bot<TOKEN>/getUpdates` and read `message.chat.id`
+from the response.
 
 The deploy workflow's "Write .env from GitHub Secrets" step regenerates
 `.env` from these on **every** deploy — rotating a key is just updating the

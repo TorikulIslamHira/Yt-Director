@@ -13,6 +13,11 @@ fs.mkdirSync(BGM_DIR, { recursive: true });
 function createClient() {
   const sqlite = new Database(DB_PATH);
   sqlite.pragma("journal_mode = WAL");
+  // Several worker processes can open this file concurrently during `next
+  // build`'s page-data collection (no cross-process module cache) — without
+  // a busy timeout, better-sqlite3 throws SQLITE_BUSY immediately instead of
+  // waiting for a concurrent writer to finish.
+  sqlite.pragma("busy_timeout = 5000");
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
@@ -27,16 +32,26 @@ function createClient() {
       completed_at INTEGER,
       generation_status TEXT NOT NULL DEFAULT 'idle',
       generation_error TEXT,
+      previous_versions TEXT NOT NULL DEFAULT '[]',
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     );
   `);
 
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      id TEXT PRIMARY KEY,
+      reading_speed_bn INTEGER NOT NULL DEFAULT 120,
+      reading_speed_en INTEGER NOT NULL DEFAULT 150
+    );
+  `);
+  sqlite.exec(`INSERT OR IGNORE INTO settings (id) VALUES ('global');`);
+
   // Migrate DBs created before status/posted_url/posted_platform/posted_links/completed_at/
-  // generation_status/generation_error existed. Several worker processes can open this
-  // file concurrently during `next build`'s page-data collection (no cross-process module
-  // cache), so a plain "column missing?" check can race — swallow "duplicate column" from
-  // a concurrent migration instead of trying to serialize it.
+  // generation_status/generation_error/previous_versions existed. Several worker processes
+  // can open this file concurrently during `next build`'s page-data collection (no
+  // cross-process module cache), so a plain "column missing?" check can race — swallow
+  // "duplicate column" from a concurrent migration instead of trying to serialize it.
   const existingColumns = new Set(
     (sqlite.pragma("table_info(projects)") as { name: string }[]).map((c) => c.name)
   );
@@ -48,6 +63,7 @@ function createClient() {
     ["completed_at", "ALTER TABLE projects ADD COLUMN completed_at INTEGER"],
     ["generation_status", "ALTER TABLE projects ADD COLUMN generation_status TEXT NOT NULL DEFAULT 'idle'"],
     ["generation_error", "ALTER TABLE projects ADD COLUMN generation_error TEXT"],
+    ["previous_versions", "ALTER TABLE projects ADD COLUMN previous_versions TEXT NOT NULL DEFAULT '[]'"],
   ] as const) {
     if (existingColumns.has(column)) continue;
     try {

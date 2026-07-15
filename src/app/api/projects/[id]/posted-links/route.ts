@@ -4,6 +4,7 @@ import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { addPostedLinkSchema } from "@/lib/validation";
 import { rowToProject, postedLinksFromRow } from "@/lib/projects";
+import { sendTelegramMessage } from "@/lib/integrations/telegram";
 import type { PostedLink } from "@/types/scene";
 
 type Params = { params: Promise<{ id: string }> };
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const existingLinks = postedLinksFromRow(current);
+  const isFirstCompletion = current.completedAt === null;
 
   const now = Date.now();
   const newLink: PostedLink = { platform: parsed.data.platform, url: parsed.data.url, addedAt: now };
@@ -36,6 +38,10 @@ export async function POST(req: NextRequest, { params }: Params) {
     })
     .where(eq(projects.id, id))
     .returning();
+
+  if (isFirstCompletion) {
+    sendTelegramMessage(`🎉 "${current.title}" — সম্পন্ন হিসেবে চিহ্নিত হয়েছে (${parsed.data.platform}): ${parsed.data.url}`);
+  }
 
   return NextResponse.json({ project: rowToProject(result[0]) });
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { History, FilePlus2 } from "lucide-react";
+import { History, FilePlus2, Settings } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { clearProject } from "@/lib/client/scene-storage";
@@ -28,6 +28,11 @@ export function AppHeader() {
           <Button variant="ghost" size="icon" aria-label="প্রজেক্ট হিস্টরি" asChild>
             <Link href="/history">
               <History className="size-5" strokeWidth={1.75} />
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon" aria-label="সেটিংস" asChild>
+            <Link href="/settings">
+              <Settings className="size-5" strokeWidth={1.75} />
             </Link>
           </Button>
           <ThemeToggle />

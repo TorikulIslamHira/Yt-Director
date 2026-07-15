@@ -4,16 +4,23 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 
 // Rough words-per-minute for spoken narration, used only to size stock clip
 // length per scene — no TTS audio is ever generated (locked decision, see
-// docs/PIPELINE_PLAN.md).
-const READING_SPEED_WPM = { bn: 120, en: 150 } as const;
+// docs/PIPELINE_PLAN.md). Tunable at runtime via the /settings page
+// (src/lib/settings.ts) rather than hardcoded, per the "tune with real
+// script samples" open item in docs/PIPELINE_PLAN.md.
+const DEFAULT_READING_SPEED_WPM = { bn: 120, en: 150 } as const;
+
+export type ReadingSpeedWpm = { bn: number; en: number };
 
 function detectLanguage(text: string): "bn" | "en" {
   return /[ঀ-৿]/.test(text) ? "bn" : "en";
 }
 
-export function estimateDurationSeconds(text: string): number {
+export function estimateDurationSeconds(
+  text: string,
+  wpmOverride: ReadingSpeedWpm = DEFAULT_READING_SPEED_WPM
+): number {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
-  const wpm = READING_SPEED_WPM[detectLanguage(text)];
+  const wpm = wpmOverride[detectLanguage(text)];
   return Math.max(2, Math.round((words / wpm) * 60));
 }
 
@@ -34,7 +41,10 @@ export type SegmentedScene = {
   aiPrompt: string;
 };
 
-export async function segmentScript(scriptText: string): Promise<SegmentedScene[]> {
+export async function segmentScript(
+  scriptText: string,
+  wpmOverride?: ReadingSpeedWpm
+): Promise<SegmentedScene[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     throw new Error("GEMINI_API_KEY সেট করা নেই।");
@@ -105,7 +115,7 @@ ${scriptText}
     index: i + 1,
     title: s.title,
     description: s.narration,
-    estimatedDurationSeconds: estimateDurationSeconds(s.narration),
+    estimatedDurationSeconds: estimateDurationSeconds(s.narration, wpmOverride),
     searchKeywords: s.searchKeywords,
     aiPrompt: s.aiPrompt,
   }));

@@ -15,8 +15,19 @@ export const projects = sqliteTable("projects", {
   completedAt: integer("completed_at"),
   generationStatus: text("generation_status").notNull().default("idle"),
   generationError: text("generation_error"),
+  previousVersions: text("previous_versions").notNull().default("[]"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
 
 export type ProjectRow = typeof projects.$inferSelect;
+
+// Single global row (id = "global") — this is a single-editor tool, no
+// per-user settings needed.
+export const settings = sqliteTable("settings", {
+  id: text("id").primaryKey(),
+  readingSpeedBn: integer("reading_speed_bn").notNull().default(120),
+  readingSpeedEn: integer("reading_speed_en").notNull().default(150),
+});
+
+export type SettingsRow = typeof settings.$inferSelect;

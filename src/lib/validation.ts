@@ -57,3 +57,12 @@ export const addPostedLinkSchema = z.object({
   url: z.string().trim().url("সঠিক একটা লিংক দিন।"),
   platform: z.enum(["youtube", "facebook", "other"]),
 });
+
+export const restoreVersionSchema = z.object({
+  index: z.number().int().min(0),
+});
+
+export const settingsSchema = z.object({
+  readingSpeedBn: z.number().int().min(50).max(400),
+  readingSpeedEn: z.number().int().min(50).max(400),
+});
