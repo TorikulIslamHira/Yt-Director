@@ -6,8 +6,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { LoudlyGenre } from "@/lib/loudly";
-import { loadProjectId, saveBgm } from "@/lib/scene-storage";
-import { readErrorMessage } from "@/lib/fetch-json";
+import { loadProjectId, saveBgm } from "@/lib/client/scene-storage";
+import { readErrorMessage } from "@/lib/client/fetch-json";
 
 const DURATION_OPTIONS = [15, 30, 60] as const;
 

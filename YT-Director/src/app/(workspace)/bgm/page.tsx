@@ -5,7 +5,7 @@ import { Music, Clock3, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { GenreGenerateRow } from "@/components/bgm/genre-generate-row";
 import type { LoudlyGenre } from "@/lib/loudly";
-import { fetchJson } from "@/lib/fetch-json";
+import { fetchJson } from "@/lib/client/fetch-json";
 
 export default function BgmPage() {
   const [genres, setGenres] = useState<LoudlyGenre[] | null>(null);

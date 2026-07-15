@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { downloadProxyUrl } from "@/lib/download-blob";
+import { downloadProxyUrl } from "@/lib/client/download-blob";
 import type { Scene } from "@/types/scene";
 
 export function SceneDetailDialog({

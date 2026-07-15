@@ -119,10 +119,14 @@ src/
   components/
     ui/                # shadcn primitives (Button, Card, Input, ...) — do not hand-edit generated internals beyond token wiring
     <feature>/         # feature components, e.g. components/scene-review/SceneCard.tsx
-  lib/                 # utils, API clients, shared helpers
+  db/                  # sqlite/drizzle schema + client (server-only)
+  lib/                 # server-only utils, API clients, validation, shared helpers
+    client/            # browser-only helpers (sessionStorage, Blob URLs, client fetch wrapper) — never imported from a route handler
   hooks/               # custom hooks
   types/               # shared TypeScript types
 ```
+
+`lib/client/` vs `lib/`: anything that touches a browser-only API (`sessionStorage`, `Blob`, `URL.createObjectURL`) or is client-only demo data goes in `lib/client/`. Everything else in `lib/` (API clients, validation, parsing, DB row mappers) is server-only and must never be imported into a `"use client"` file.
 
 ### TypeScript
 - `strict: true` (already on). Never use `any` — use `unknown` + narrowing, or a proper type.

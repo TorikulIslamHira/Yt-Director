@@ -7,8 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Project } from "@/types/scene";
-import { saveScriptText, saveScenes, saveProjectId, saveBgm } from "@/lib/scene-storage";
-import { fetchJson } from "@/lib/fetch-json";
+import { saveScriptText, saveScenes, saveProjectId, saveBgm } from "@/lib/client/scene-storage";
+import { fetchJson } from "@/lib/client/fetch-json";
 
 type ProjectSummary = Pick<Project, "id" | "title" | "createdAt" | "updatedAt">;
 

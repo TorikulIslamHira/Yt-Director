@@ -13,8 +13,8 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
-import { saveScriptText, saveProjectId } from "@/lib/scene-storage";
-import { fetchJson } from "@/lib/fetch-json";
+import { saveScriptText, saveProjectId } from "@/lib/client/scene-storage";
+import { fetchJson } from "@/lib/client/fetch-json";
 
 const ACCEPTED_EXTENSIONS = [".doc", ".docx", ".txt", ".pdf"];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB

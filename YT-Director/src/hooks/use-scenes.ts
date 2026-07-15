@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 import type { BgmInfo, Scene } from "@/types/scene";
-import { mockScenes } from "@/lib/mock-scenes";
-import { SCENES_STORAGE_KEY, PROJECT_ID_KEY, loadBgm } from "@/lib/scene-storage";
+import { mockScenes } from "@/lib/client/mock-scenes";
+import { SCENES_STORAGE_KEY, PROJECT_ID_KEY, loadBgm } from "@/lib/client/scene-storage";
 
 function subscribe() {
   return () => {};

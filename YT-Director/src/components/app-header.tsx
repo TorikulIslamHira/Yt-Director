@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { History, FilePlus2 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
-import { clearProject } from "@/lib/scene-storage";
+import { clearProject } from "@/lib/client/scene-storage";
 
 export function AppHeader() {
   const router = useRouter();

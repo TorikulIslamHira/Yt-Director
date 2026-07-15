@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useScenes, useBgm, useProjectId } from "@/hooks/use-scenes";
 import { buildGuidelineText } from "@/lib/build-guideline";
-import { downloadBlob, downloadProxyUrl } from "@/lib/download-blob";
+import { downloadBlob, downloadProxyUrl } from "@/lib/client/download-blob";
 
 export default function DownloadPage() {
   const { scenes, isDemo } = useScenes();

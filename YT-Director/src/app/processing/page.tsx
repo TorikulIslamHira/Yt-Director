@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { CheckCircle2, Loader2, Circle, AlertCircle, RotateCcw } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { loadScriptText, saveScenes, loadProjectId } from "@/lib/scene-storage";
-import { fetchJson } from "@/lib/fetch-json";
+import { loadScriptText, saveScenes, loadProjectId } from "@/lib/client/scene-storage";
+import { fetchJson } from "@/lib/client/fetch-json";
 import type { Scene } from "@/types/scene";
 
 const STEPS = [
