@@ -4,7 +4,7 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 
 // Rough words-per-minute for spoken narration, used only to size stock clip
 // length per scene — no TTS audio is ever generated (locked decision, see
-// PIPELINE_PLAN.md).
+// docs/PIPELINE_PLAN.md).
 const READING_SPEED_WPM = { bn: 120, en: 150 } as const;
 
 function detectLanguage(text: string): "bn" | "en" {
