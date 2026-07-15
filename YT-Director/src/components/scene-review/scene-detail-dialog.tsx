@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { downloadProxyUrl } from "@/lib/download-blob";
 import type { Scene } from "@/types/scene";
 
 export function SceneDetailDialog({
@@ -69,7 +70,10 @@ export function SceneDetailDialog({
                       {match.source} · {match.durationSeconds}s
                     </span>
                     <Button size="icon-sm" variant="outline" asChild>
-                      <a href={match.downloadUrl} download aria-label="ডাউনলোড">
+                      <a
+                        href={downloadProxyUrl(match.downloadUrl, `${match.source}-${match.id}.mp4`)}
+                        aria-label="ডাউনলোড"
+                      >
                         <Download className="size-3.5" strokeWidth={1.75} />
                       </a>
                     </Button>

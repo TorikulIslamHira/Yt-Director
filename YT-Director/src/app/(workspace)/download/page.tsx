@@ -1,16 +1,41 @@
 "use client";
 
-import { FolderDown, Video, Music, FileText, Download } from "lucide-react";
+import { useState } from "react";
+import { FolderDown, Video, Music, FileText, Download, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useScenes } from "@/hooks/use-scenes";
 import { mockBgmTracks } from "@/lib/mock-bgm-tracks";
+import { buildGuidelineText } from "@/lib/build-guideline";
+import { downloadBlob, downloadProxyUrl } from "@/lib/download-blob";
 
 export default function DownloadPage() {
   const { scenes, isDemo } = useScenes();
   const stockClips = scenes.filter((s) => s.status === "stock-match");
   const bgmTrack = mockBgmTracks[0];
+  const [isZipping, setIsZipping] = useState(false);
+
+  async function handleDownloadAll() {
+    setIsZipping(true);
+    try {
+      const res = await fetch("/api/download-zip", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenes }),
+      });
+      if (!res.ok) throw new Error("zip failed");
+      const blob = await res.blob();
+      downloadBlob(blob, "yt-director-export.zip");
+    } finally {
+      setIsZipping(false);
+    }
+  }
+
+  function handleDownloadGuideline() {
+    const text = buildGuidelineText(scenes);
+    downloadBlob(new Blob([text], { type: "text/plain;charset=utf-8" }), "editing-guideline.txt");
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
@@ -27,8 +52,12 @@ export default function DownloadPage() {
         </p>
       </div>
 
-      <Button size="lg" className="w-full sm:w-auto">
-        <Download className="size-4" strokeWidth={1.75} />
+      <Button size="lg" className="w-full sm:w-auto" onClick={handleDownloadAll} disabled={isZipping}>
+        {isZipping ? (
+          <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />
+        ) : (
+          <Download className="size-4" strokeWidth={1.75} />
+        )}
         সব ডাউনলোড করুন (.zip)
       </Button>
 
@@ -47,7 +76,10 @@ export default function DownloadPage() {
                 </span>
               </div>
               <Button size="icon-sm" variant="outline" asChild>
-                <a href={scene.stockMatches[0]?.downloadUrl} download aria-label="ডাউনলোড">
+                <a
+                  href={downloadProxyUrl(scene.stockMatches[0]?.downloadUrl ?? "", `scene-${scene.index}.mp4`)}
+                  aria-label="ডাউনলোড"
+                >
                   <Download className="size-3.5" strokeWidth={1.75} />
                 </a>
               </Button>
@@ -64,10 +96,8 @@ export default function DownloadPage() {
               <Music className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
               <span className="truncate text-sm leading-5">{bgmTrack.title}</span>
             </div>
-            <Button size="icon-sm" variant="outline" asChild>
-              <a href={bgmTrack.downloadUrl} download aria-label="ডাউনলোড">
-                <Download className="size-3.5" strokeWidth={1.75} />
-              </a>
+            <Button size="icon-sm" variant="outline" disabled title="Loudly BGM এখনো যোগ করা হয়নি">
+              <Download className="size-3.5" strokeWidth={1.75} />
             </Button>
           </div>
         </CardContent>
@@ -79,12 +109,10 @@ export default function DownloadPage() {
           <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
             <div className="flex min-w-0 items-center gap-2">
               <FileText className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
-              <span className="truncate text-sm leading-5">editing-guideline.pdf</span>
+              <span className="truncate text-sm leading-5">editing-guideline.txt</span>
             </div>
-            <Button size="icon-sm" variant="outline" asChild>
-              <a href="#" download aria-label="ডাউনলোড">
-                <Download className="size-3.5" strokeWidth={1.75} />
-              </a>
+            <Button size="icon-sm" variant="outline" onClick={handleDownloadGuideline} aria-label="ডাউনলোড">
+              <Download className="size-3.5" strokeWidth={1.75} />
             </Button>
           </div>
         </CardContent>

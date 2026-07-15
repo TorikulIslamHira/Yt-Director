@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { SceneDetailDialog } from "@/components/scene-review/scene-detail-dialog";
+import { downloadProxyUrl } from "@/lib/download-blob";
 import type { Scene } from "@/types/scene";
 
 export function SceneCard({ scene }: { scene: Scene }) {
@@ -56,7 +57,12 @@ export function SceneCard({ scene }: { scene: Scene }) {
         <CardFooter className="gap-2 pt-4 pb-4">
           {isMatch ? (
             <Button size="sm" className="flex-1" asChild>
-              <a href={scene.stockMatches[0]?.downloadUrl} download>
+              <a
+                href={downloadProxyUrl(
+                  scene.stockMatches[0]?.downloadUrl ?? "",
+                  `scene-${scene.index}.mp4`
+                )}
+              >
                 <Download className="size-4" strokeWidth={1.75} />
                 ডাউনলোড
               </a>
