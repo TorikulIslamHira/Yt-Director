@@ -6,14 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { useScenes } from "@/hooks/use-scenes";
-import { mockBgmTracks } from "@/lib/mock-bgm-tracks";
 import { buildGuidelineText } from "@/lib/build-guideline";
 import { downloadBlob, downloadProxyUrl } from "@/lib/download-blob";
 
 export default function DownloadPage() {
   const { scenes, isDemo } = useScenes();
   const stockClips = scenes.filter((s) => s.status === "stock-match");
-  const bgmTrack = mockBgmTracks[0];
   const [isZipping, setIsZipping] = useState(false);
 
   async function handleDownloadAll() {
@@ -94,9 +92,11 @@ export default function DownloadPage() {
           <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
             <div className="flex min-w-0 items-center gap-2">
               <Music className="size-4 shrink-0 text-muted-foreground" strokeWidth={1.75} />
-              <span className="truncate text-sm leading-5">{bgmTrack.title}</span>
+              <span className="truncate text-sm leading-5 text-muted-foreground">
+                BGM &amp; SFX পেজে গিয়ে একটা ট্র্যাক তৈরি করুন
+              </span>
             </div>
-            <Button size="icon-sm" variant="outline" disabled title="Loudly BGM এখনো যোগ করা হয়নি">
+            <Button size="icon-sm" variant="outline" disabled title="আগে BGM & SFX পেজে গিয়ে একটা ট্র্যাক তৈরি করুন">
               <Download className="size-3.5" strokeWidth={1.75} />
             </Button>
           </div>
