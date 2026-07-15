@@ -55,6 +55,14 @@ jobs:
             data
             .env*
 
+      - name: Write .env from GitHub Secrets
+        run: |
+          cat > .env << EOF
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          PEXELS_API_KEY=${{ secrets.PEXELS_API_KEY }}
+          PIXABAY_API_KEY=${{ secrets.PIXABAY_API_KEY }}
+          EOF
+
       - name: Install dependencies
         run: npm ci
 

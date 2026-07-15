@@ -21,11 +21,11 @@ sudo npm install -g pm2
 `build-essential`/`python3` are needed because the app uses `better-sqlite3`
 (a native module compiled via node-gyp during `npm ci`) for its local
 project database — everything the app persists (script text, generated
-scenes, BGM tracks) lives in `YT-Director/data/`, a plain SQLite file plus
-generated `.mp3`s. That directory is git-ignored and excluded from the
+scenes, BGM tracks) lives in `data/` at the repo root, a plain SQLite file
+plus generated `.mp3`s. That directory is git-ignored and excluded from the
 deploy workflow's checkout-clean step (see `.github/workflows/deploy.yml`),
 so it survives every deploy — just make sure the runner's user can write to
-`YT-Director/data` (it's created automatically on first run).
+`data/` (it's created automatically on first run).
 
 ## 2. Install the self-hosted GitHub Actions runner
 
@@ -53,37 +53,40 @@ sudo ./svc.sh start
 
 Confirm it shows up as "Idle" under Settings → Actions → Runners.
 
-## 3. First-time app checkout, `.env`, and PM2 start
+## 3. API keys, first-time app checkout, and PM2 start
+
+**API keys live in GitHub Actions Secrets, not a hand-edited server file.**
+Go to `Settings` → `Secrets and variables` → `Actions` → `New repository
+secret` on GitHub and add:
+
+```
+GEMINI_API_KEY
+PEXELS_API_KEY
+PIXABAY_API_KEY
+```
+
+(Loudly was removed 2026-07-16 — no key needed. BGM is planned via
+ElevenLabs — add an `ELEVENLABS_API_KEY` secret here once that's wired.)
+
+The deploy workflow's "Write .env from GitHub Secrets" step regenerates
+`.env` from these on **every** deploy — rotating a key is just updating the
+GitHub Secret and pushing/re-running the workflow, never SSH. (The
+`clean-exclude` on `.env*` is still there as a safety net, but the write
+step means it's no longer load-bearing for normal operation.)
 
 The runner keeps its working directory between runs (it's not wiped like
 GitHub-hosted runners), so the checkout persists and becomes your deploy
-directory.
+directory:
 
 ```bash
-cd actions-runner/_work/Yt-Director/Yt-Director/YT-Director   # created after the first workflow run
+cd actions-runner/_work/Yt-Director/Yt-Director   # created after the first workflow run
 ```
 
-To create it right away rather than waiting for the first push, just push
-any commit to `main` once — the workflow will check the repo out here
-automatically. Then:
+Push any commit to `main` once — the workflow checks the repo out here,
+writes `.env` from the secrets above, and builds it automatically. Then,
+one time only, start the PM2 process from that same directory:
 
 ```bash
-nano .env
-```
-
-Fill in whatever the app needs at runtime:
-
-```
-GEMINI_API_KEY=...
-PEXELS_API_KEY=...
-PIXABAY_API_KEY=...
-```
-
-(Loudly was removed 2026-07-16. BGM is planned via ElevenLabs — add `ELEVENLABS_API_KEY` here once that's wired.)
-
-```bash
-npm ci
-npm run build
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup   # run the command it prints, so PM2 survives a reboot
