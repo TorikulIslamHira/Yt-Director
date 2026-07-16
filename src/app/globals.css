@@ -86,6 +86,12 @@
   --sidebar-accent-foreground: #0f172a;
   --sidebar-border: #e2e8f0;
   --sidebar-ring: #2563eb;
+  --glass-bg: rgb(255 255 255 / 0.6);
+  --glass-border: rgb(15 23 42 / 0.08);
+  --glass-shadow: 0 8px 30px rgb(15 23 42 / 0.06);
+  --gradient-accent-from: #2563eb;
+  --gradient-accent-to: #7c3aed;
+  --ambient-glow: rgb(37 99 235 / 0.05);
 }
 
 .dark {
@@ -122,6 +128,12 @@
   --sidebar-accent-foreground: #f1f5f9;
   --sidebar-border: #1f2937;
   --sidebar-ring: #3b82f6;
+  --glass-bg: rgb(17 24 39 / 0.55);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-shadow: 0 8px 30px rgb(0 0 0 / 0.35);
+  --gradient-accent-from: #3b82f6;
+  --gradient-accent-to: #8b5cf6;
+  --ambient-glow: rgb(99 102 241 / 0.1);
 }
 
 @layer base {
@@ -130,10 +142,35 @@
   }
   body {
     @apply bg-background text-foreground;
+    background-image:
+      radial-gradient(circle at 15% -10%, var(--ambient-glow), transparent 45%),
+      radial-gradient(circle at 100% 10%, var(--ambient-glow), transparent 40%);
+    background-attachment: fixed;
   }
   html {
     @apply font-sans;
   }
+}
+
+/* Tailwind v4 @utility (not plain @layer utilities classes) so these
+   compose with variants like after:gradient-brand / hover:glass-panel. */
+@utility glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+@utility gradient-brand {
+  background-image: linear-gradient(135deg, var(--gradient-accent-from), var(--gradient-accent-to));
+}
+
+@utility gradient-brand-text {
+  background-image: linear-gradient(135deg, var(--gradient-accent-from), var(--gradient-accent-to));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 @media print {
