@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { restoreVersionSchema } from "@/lib/validation";
 import { rowToProject } from "@/lib/projects";
+import { getSession } from "@/lib/auth/session";
 import type { ProjectVersion } from "@/types/scene";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(req: NextRequest, { params }: Params) {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const { id } = await params;
   const parsed = restoreVersionSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
 
-  const project = await db.query.projects.findFirst({ where: eq(projects.id, id) });
+  const project = await db.query.projects.findFirst({
+    where: and(eq(projects.id, id), eq(projects.userId, user.id)),
+  });
   if (!project) {
     return NextResponse.json({ error: "প্রজেক্ট পাওয়া যায়নি।" }, { status: 404 });
   }
@@ -35,7 +43,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   const result = await db
     .update(projects)
     .set({ scenes: JSON.stringify(version.scenes), updatedAt: Date.now() })
-    .where(eq(projects.id, id))
+    .where(and(eq(projects.id, id), eq(projects.userId, user.id)))
     .returning();
 
   return NextResponse.json({ project: rowToProject(result[0]) });

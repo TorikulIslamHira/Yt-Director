@@ -1,4 +1,5 @@
 import { fetchWithRetry } from "./fetch-retry";
+import type { UserApiKeys } from "@/lib/user-keys";
 
 export type RawStockMatch = {
   id: string;
@@ -25,10 +26,8 @@ type PixabayVideo = {
   userImageURL: string;
 };
 
-async function searchPexelsVideo(query: string): Promise<RawStockMatch[]> {
-  const apiKey = process.env.PEXELS_API_KEY;
+async function searchPexelsVideo(query: string, apiKey: string | null): Promise<RawStockMatch[]> {
   if (!apiKey) {
-    console.warn("PEXELS_API_KEY সেট করা নেই — Pexels স্টক সার্চ স্কিপ করা হচ্ছে।");
     return [];
   }
 
@@ -52,10 +51,8 @@ async function searchPexelsVideo(query: string): Promise<RawStockMatch[]> {
   });
 }
 
-async function searchPixabayVideo(query: string): Promise<RawStockMatch[]> {
-  const apiKey = process.env.PIXABAY_API_KEY;
+async function searchPixabayVideo(query: string, apiKey: string | null): Promise<RawStockMatch[]> {
   if (!apiKey) {
-    console.warn("PIXABAY_API_KEY সেট করা নেই — Pixabay স্টক সার্চ স্কিপ করা হচ্ছে।");
     return [];
   }
 
@@ -76,11 +73,12 @@ async function searchPixabayVideo(query: string): Promise<RawStockMatch[]> {
 
 export async function searchStockVideo(
   keywords: string,
-  targetDurationSeconds: number
+  targetDurationSeconds: number,
+  keys: Pick<UserApiKeys, "pexelsKey" | "pixabayKey">
 ): Promise<RawStockMatch[]> {
   const [pexels, pixabay] = await Promise.all([
-    searchPexelsVideo(keywords).catch(() => []),
-    searchPixabayVideo(keywords).catch(() => []),
+    searchPexelsVideo(keywords, keys.pexelsKey).catch(() => []),
+    searchPixabayVideo(keywords, keys.pixabayKey).catch(() => []),
   ]);
 
   const all = [...pexels, ...pixabay].filter((m) => m.downloadUrl);

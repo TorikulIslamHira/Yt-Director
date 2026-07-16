@@ -2,13 +2,16 @@ import path from "node:path";
 import fs from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { Readable } from "node:stream";
+import { and, eq } from "drizzle-orm";
 import { ZipArchive } from "archiver";
 import { buildGuidelineText } from "@/lib/build-guideline";
 import { buildSrt } from "@/lib/build-captions";
 import { buildFcpxml } from "@/lib/build-fcpxml";
 import { isAllowedMediaUrl } from "@/lib/allowed-media-hosts";
 import { downloadZipSchema } from "@/lib/validation";
-import { BGM_DIR } from "@/db/client";
+import { db, BGM_DIR } from "@/db/client";
+import { projects } from "@/db/schema";
+import { getSession } from "@/lib/auth/session";
 
 export const maxDuration = 120;
 
@@ -19,11 +22,25 @@ function extensionFromUrl(url: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const parsed = downloadZipSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: "কোনো দৃশ্য পাওয়া যায়নি।" }, { status: 400 });
   }
   const { scenes, projectId } = parsed.data;
+
+  if (projectId) {
+    const owned = await db.query.projects.findFirst({
+      where: and(eq(projects.id, projectId), eq(projects.userId, user.id)),
+    });
+    if (!owned) {
+      return NextResponse.json({ error: "প্রজেক্ট পাওয়া যায়নি।" }, { status: 404 });
+    }
+  }
 
   const archive = new ZipArchive({ zlib: { level: 9 } });
 

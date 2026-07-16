@@ -1,20 +1,19 @@
 import { fetchWithRetry } from "./fetch-retry";
+import type { UserApiKeys } from "@/lib/user-keys";
 
 const GEMINI_MODEL = "gemini-2.5-flash";
 // Fallback when Gemini's free-tier quota (20 req/day) runs out — same JSON-mode
 // contract, OpenAI-compatible endpoint, no separate SDK needed.
 const GROQ_MODEL = "llama-3.3-70b-versatile";
 
-async function callGroqJson(prompt: string): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY;
-  if (!apiKey) {
-    throw new Error("GROQ_API_KEY সেট করা নেই।");
-  }
+type GenerationKeys = Pick<UserApiKeys, "geminiKey" | "groqKey">;
+
+async function callGroqJson(prompt: string, groqKey: string): Promise<string> {
   const res = await fetchWithRetry("https://api.groq.com/openai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
+      Authorization: `Bearer ${groqKey}`,
     },
     body: JSON.stringify({
       model: GROQ_MODEL,
@@ -88,18 +87,13 @@ ${scriptText}
 """`;
 }
 
-async function segmentScriptViaGemini(scriptText: string): Promise<GeminiRawScene[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY সেট করা নেই।");
-  }
-
+async function segmentScriptViaGemini(scriptText: string, geminiKey: string): Promise<GeminiRawScene[]> {
   const prompt = `${buildSegmentPrompt(scriptText)}
 
 Return ONLY a JSON array, no prose, no markdown fences.`;
 
   const res = await fetchWithRetry(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -143,13 +137,13 @@ Return ONLY a JSON array, no prose, no markdown fences.`;
   }
 }
 
-async function segmentScriptViaGroq(scriptText: string): Promise<GeminiRawScene[]> {
+async function segmentScriptViaGroq(scriptText: string, groqKey: string): Promise<GeminiRawScene[]> {
   const prompt = `${buildSegmentPrompt(scriptText)}
 
 Return ONLY a JSON object, no prose, no markdown fences, matching EXACTLY this shape (each field is a single string, "searchKeywords" is ONE comma-separated string, not a list):
 {"scenes": [{"title": "...", "narration": "...", "searchKeywords": "keyword one, keyword two, keyword three", "aiPrompt": "..."}]}`;
 
-  const text = await callGroqJson(prompt);
+  const text = await callGroqJson(prompt, groqKey);
   let parsed: { scenes?: GeminiRawScene[] };
   try {
     parsed = JSON.parse(text);
@@ -164,16 +158,23 @@ Return ONLY a JSON object, no prose, no markdown fences, matching EXACTLY this s
 
 export async function segmentScript(
   scriptText: string,
-  wpmOverride?: ReadingSpeedWpm
+  wpmOverride: ReadingSpeedWpm | undefined,
+  keys: GenerationKeys
 ): Promise<SegmentedScene[]> {
+  if (!keys.geminiKey && !keys.groqKey) {
+    throw new Error("আপনার Settings-এ Gemini অথবা Groq API key যোগ করুন।");
+  }
+
   let rawScenes: GeminiRawScene[];
-  try {
-    rawScenes = await segmentScriptViaGemini(scriptText);
-  } catch (geminiErr) {
-    if (!process.env.GROQ_API_KEY) {
-      throw geminiErr;
+  if (keys.geminiKey) {
+    try {
+      rawScenes = await segmentScriptViaGemini(scriptText, keys.geminiKey);
+    } catch (geminiErr) {
+      if (!keys.groqKey) throw geminiErr;
+      rawScenes = await segmentScriptViaGroq(scriptText, keys.groqKey);
     }
-    rawScenes = await segmentScriptViaGroq(scriptText);
+  } else {
+    rawScenes = await segmentScriptViaGroq(scriptText, keys.groqKey!);
   }
 
   return rawScenes.map((s, i) => ({
@@ -205,18 +206,13 @@ ${scriptText}
 """`;
 }
 
-async function generateVideoMetadataViaGemini(scriptText: string): Promise<VideoMetadata> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_KEY সেট করা নেই।");
-  }
-
+async function generateVideoMetadataViaGemini(scriptText: string, geminiKey: string): Promise<VideoMetadata> {
   const prompt = `${buildMetadataPrompt(scriptText)}
 
 Return ONLY a JSON object, no prose, no markdown fences.`;
 
   const res = await fetchWithRetry(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${geminiKey}`,
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -256,13 +252,13 @@ Return ONLY a JSON object, no prose, no markdown fences.`;
   }
 }
 
-async function generateVideoMetadataViaGroq(scriptText: string): Promise<VideoMetadata> {
+async function generateVideoMetadataViaGroq(scriptText: string, groqKey: string): Promise<VideoMetadata> {
   const prompt = `${buildMetadataPrompt(scriptText)}
 
 Return ONLY a JSON object, no prose, no markdown fences, matching EXACTLY this shape ("titles" and "tags" are arrays of strings):
 {"titles": ["...", "...", "..."], "description": "...", "tags": ["...", "..."]}`;
 
-  const text = await callGroqJson(prompt);
+  const text = await callGroqJson(prompt, groqKey);
   try {
     return JSON.parse(text) as VideoMetadata;
   } catch {
@@ -270,13 +266,18 @@ Return ONLY a JSON object, no prose, no markdown fences, matching EXACTLY this s
   }
 }
 
-export async function generateVideoMetadata(scriptText: string): Promise<VideoMetadata> {
-  try {
-    return await generateVideoMetadataViaGemini(scriptText);
-  } catch (geminiErr) {
-    if (!process.env.GROQ_API_KEY) {
-      throw geminiErr;
-    }
-    return generateVideoMetadataViaGroq(scriptText);
+export async function generateVideoMetadata(scriptText: string, keys: GenerationKeys): Promise<VideoMetadata> {
+  if (!keys.geminiKey && !keys.groqKey) {
+    throw new Error("আপনার Settings-এ Gemini অথবা Groq API key যোগ করুন।");
   }
+
+  if (keys.geminiKey) {
+    try {
+      return await generateVideoMetadataViaGemini(scriptText, keys.geminiKey);
+    } catch (geminiErr) {
+      if (!keys.groqKey) throw geminiErr;
+      return generateVideoMetadataViaGroq(scriptText, keys.groqKey);
+    }
+  }
+  return generateVideoMetadataViaGroq(scriptText, keys.groqKey!);
 }

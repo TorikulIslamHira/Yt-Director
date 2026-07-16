@@ -2,17 +2,27 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { History, FilePlus2, Settings } from "lucide-react";
+import { History, FilePlus2, Settings, LogOut, ShieldCheck } from "lucide-react";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { clearProject } from "@/lib/client/scene-storage";
 
-export function AppHeader() {
+type AppHeaderProps = {
+  user: { id: string; email: string; isAdmin: boolean };
+};
+
+export function AppHeader({ user }: AppHeaderProps) {
   const router = useRouter();
 
   function handleNewProject() {
     clearProject();
     router.push("/");
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+    router.refresh();
   }
 
   return (
@@ -35,7 +45,20 @@ export function AppHeader() {
               <Settings className="size-5" strokeWidth={1.75} />
             </Link>
           </Button>
+          {user.isAdmin && (
+            <Button variant="ghost" size="icon" aria-label="Admin" asChild>
+              <Link href="/admin">
+                <ShieldCheck className="size-5" strokeWidth={1.75} />
+              </Link>
+            </Button>
+          )}
           <ThemeToggle />
+          <span className="mx-1 hidden text-xs leading-4 text-muted-foreground sm:inline">
+            {user.email}
+          </span>
+          <Button variant="ghost" size="icon" aria-label="লগআউট" onClick={handleLogout}>
+            <LogOut className="size-5" strokeWidth={1.75} />
+          </Button>
         </div>
       </div>
     </header>

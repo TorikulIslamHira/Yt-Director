@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiKeysCard } from "@/components/settings/api-keys-card";
 import { fetchJson } from "@/lib/client/fetch-json";
 import type { AppSettings } from "@/types/scene";
 
@@ -108,6 +109,8 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       )}
+
+      <ApiKeysCard />
     </main>
   );
 }

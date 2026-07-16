@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAllowedMediaUrl } from "@/lib/allowed-media-hosts";
+import { getSession } from "@/lib/auth/session";
 
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const url = req.nextUrl.searchParams.get("url");
   const filename = req.nextUrl.searchParams.get("filename") ?? "download";
 

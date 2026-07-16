@@ -66,3 +66,30 @@ export const settingsSchema = z.object({
   readingSpeedBn: z.number().int().min(50).max(400),
   readingSpeedEn: z.number().int().min(50).max(400),
 });
+
+export const signupSchema = z.object({
+  email: z.string().trim().toLowerCase().email("সঠিক ইমেইল দিন।"),
+  password: z.string().min(8, "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।"),
+});
+
+export const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email("সঠিক ইমেইল দিন।"),
+  password: z.string().min(1, "পাসওয়ার্ড দিন।"),
+});
+
+export const apiKeysSchema = z
+  .object({
+    gemini: z.string().trim().min(1).optional(),
+    groq: z.string().trim().min(1).optional(),
+    pexels: z.string().trim().min(1).optional(),
+    pixabay: z.string().trim().min(1).optional(),
+    telegramBotToken: z.string().trim().min(1).optional(),
+    telegramChatId: z.string().trim().min(1).optional(),
+  })
+  .refine((data) => Object.keys(data).length > 0, {
+    message: "অন্তত একটা key দিতে হবে।",
+  });
+
+export const adminResetPasswordSchema = z.object({
+  newPassword: z.string().min(8, "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।"),
+});

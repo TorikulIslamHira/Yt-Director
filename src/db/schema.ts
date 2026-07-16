@@ -2,6 +2,7 @@ import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 
 export const projects = sqliteTable("projects", {
   id: text("id").primaryKey(),
+  userId: text("user_id"),
   title: text("title").notNull(),
   scriptText: text("script_text").notNull(),
   scenes: text("scenes").notNull().default("[]"),
@@ -22,8 +23,8 @@ export const projects = sqliteTable("projects", {
 
 export type ProjectRow = typeof projects.$inferSelect;
 
-// Single global row (id = "global") — this is a single-editor tool, no
-// per-user settings needed.
+// id doubles as the owning user's id (was a single hardcoded "global" row
+// before multi-user support, 2026-07-16).
 export const settings = sqliteTable("settings", {
   id: text("id").primaryKey(),
   readingSpeedBn: integer("reading_speed_bn").notNull().default(120),
@@ -31,3 +32,35 @@ export const settings = sqliteTable("settings", {
 });
 
 export type SettingsRow = typeof settings.$inferSelect;
+
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  isAdmin: integer("is_admin").notNull().default(0),
+  createdAt: integer("created_at").notNull(),
+});
+
+export type UserRow = typeof users.$inferSelect;
+
+export const sessions = sqliteTable("sessions", {
+  token: text("token").primaryKey(),
+  userId: text("user_id").notNull(),
+  expiresAt: integer("expires_at").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+export type SessionRow = typeof sessions.$inferSelect;
+
+export const userApiKeys = sqliteTable("user_api_keys", {
+  userId: text("user_id").primaryKey(),
+  geminiKeyEnc: text("gemini_key_enc"),
+  groqKeyEnc: text("groq_key_enc"),
+  pexelsKeyEnc: text("pexels_key_enc"),
+  pixabayKeyEnc: text("pixabay_key_enc"),
+  telegramBotTokenEnc: text("telegram_bot_token_enc"),
+  telegramChatIdEnc: text("telegram_chat_id_enc"),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export type UserApiKeysRow = typeof userApiKeys.$inferSelect;

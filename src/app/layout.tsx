@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Hind_Siliguri, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/layout/theme-provider";
-import { AppHeader } from "@/components/layout/app-header";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -44,7 +43,6 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AppHeader />
           {children}
           <Toaster />
         </ThemeProvider>

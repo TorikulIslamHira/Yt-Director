@@ -1,9 +1,13 @@
+import type { UserApiKeys } from "@/lib/user-keys";
+
 // Best-effort notifications — a failed/misconfigured Telegram send should
 // never break the actual feature (scene generation, marking a project
 // complete). Errors are swallowed after a console.error, never thrown.
-export async function sendTelegramMessage(text: string): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+export async function sendTelegramMessage(
+  text: string,
+  keys: Pick<UserApiKeys, "telegramBotToken" | "telegramChatId">
+): Promise<void> {
+  const { telegramBotToken: token, telegramChatId: chatId } = keys;
   if (!token || !chatId) return;
 
   try {

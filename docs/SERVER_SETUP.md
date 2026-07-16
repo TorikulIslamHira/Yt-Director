@@ -55,42 +55,44 @@ Confirm it shows up as "Idle" under Settings → Actions → Runners.
 
 ## 3. API keys, first-time app checkout, and PM2 start
 
-**API keys live in GitHub Actions Secrets, not a hand-edited server file.**
+The app is multi-user (added 2026-07-16): every signed-up user adds their
+**own** Gemini/Groq/Pexels/Pixabay/Telegram keys from the in-app Settings
+page (encrypted at rest), so one user's usage never touches another's
+quota or bill. `GEMINI_API_KEY`/`GROQ_API_KEY`/`PEXELS_API_KEY`/
+`PIXABAY_API_KEY`/`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` env vars are
+**not read at runtime anymore** — they only matter once, as a one-time
+seed for the bootstrapped admin account (see below).
+
 Go to `Settings` → `Secrets and variables` → `Actions` → `New repository
 secret` on GitHub and add:
 
 ```
-GEMINI_API_KEY
-GROQ_API_KEY
-PEXELS_API_KEY
-PIXABAY_API_KEY
-TELEGRAM_BOT_TOKEN
-TELEGRAM_CHAT_ID
+API_KEY_ENCRYPTION_SECRET
+ADMIN_EMAIL
+ADMIN_PASSWORD
 ```
 
-(Loudly was removed 2026-07-16 — no key needed. BGM is planned via
-ElevenLabs — add an `ELEVENLABS_API_KEY` secret here once that's wired.)
+`API_KEY_ENCRYPTION_SECRET` encrypts every user's saved API keys at rest
+(AES-256-GCM, `src/lib/crypto.ts`). Generate it **once** with
+`openssl rand -hex 32` and never rotate it — rotating makes every already-
+saved key undecryptable for every user.
 
-`GROQ_API_KEY` (added 2026-07-16) is an automatic fallback for scene
-segmentation and title/description generation — if the Gemini free-tier
-quota (20 req/day) is exhausted or Gemini errors out, the app retries the
-same request against Groq's free Llama 3.3 70B before failing (see
-`src/lib/integrations/gemini.ts`). If unset, Gemini failures just surface
-as before — no behavior change.
-
-`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` (added 2026-07-16) power optional
-Telegram notifications — sent when scene generation finishes/fails and when
-a project is marked complete (see `src/lib/integrations/telegram.ts`). If
-either is unset, notifications are silently skipped; nothing else depends
-on them. To get a chat ID: message your bot once in Telegram, then hit
-`https://api.telegram.org/bot<TOKEN>/getUpdates` and read `message.chat.id`
-from the response.
+`ADMIN_EMAIL`/`ADMIN_PASSWORD` only matter on the very first boot after
+this feature shipped: if the `users` table is empty, the app creates that
+one account, hands it every project that existed before multi-user support,
+and — if `GEMINI_API_KEY`/`GROQ_API_KEY`/`PEXELS_API_KEY`/`PIXABAY_API_KEY`/
+`TELEGRAM_BOT_TOKEN`/`TELEGRAM_CHAT_ID` secrets are *also* still set at that
+moment — seeds that admin's own API keys from them (`src/db/client.ts`,
+`bootstrapAdmin`). It's a no-op on every boot after the first, so these can
+stay in secrets harmlessly or be removed once you've confirmed you can log
+in. Anyone else creates their own account from `/signup` and adds their own
+keys from `/settings` — nothing else needs to be shared.
 
 The deploy workflow's "Write .env from GitHub Secrets" step regenerates
-`.env` from these on **every** deploy — rotating a key is just updating the
-GitHub Secret and pushing/re-running the workflow, never SSH. (The
-`clean-exclude` on `.env*` is still there as a safety net, but the write
-step means it's no longer load-bearing for normal operation.)
+`.env` from all of these on **every** deploy — rotating a value is just
+updating the GitHub Secret and pushing/re-running the workflow, never SSH.
+(The `clean-exclude` on `.env*` is still there as a safety net, but the
+write step means it's no longer load-bearing for normal operation.)
 
 The runner keeps its working directory between runs (it's not wiped like
 GitHub-hosted runners), so the checkout persists and becomes your deploy
@@ -108,6 +110,18 @@ one time only, start the PM2 process from that same directory:
 pm2 start ecosystem.config.js
 pm2 save
 pm2 startup   # run the command it prints, so PM2 survives a reboot
+```
+
+### Forgot password
+
+No email-sending service is configured, so there's no self-serve "forgot
+password" link. If a user forgets their password, reset it yourself directly
+on the server (`scripts/reset-password.mjs`) — it also logs the user out of
+every existing session:
+
+```bash
+cd actions-runner/_work/Yt-Director/Yt-Director
+npm run reset-password -- user@example.com newPassword123
 ```
 
 `ecosystem.config.js` runs 2 cluster instances on port 3001, so `pm2 reload`

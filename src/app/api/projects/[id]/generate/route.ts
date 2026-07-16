@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { generateScenesForScript } from "@/lib/generate-scenes";
 import { sendTelegramMessage } from "@/lib/integrations/telegram";
+import { getUserApiKeys } from "@/lib/user-keys";
+import { getSession } from "@/lib/auth/session";
 import type { ProjectVersion, Scene } from "@/types/scene";
 
 export const maxDuration = 60;
@@ -14,12 +16,21 @@ const MAX_VERSIONS = 5;
 type Params = { params: Promise<{ id: string }> };
 
 export async function POST(_req: NextRequest, { params }: Params) {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const { id } = await params;
 
-  const project = await db.query.projects.findFirst({ where: eq(projects.id, id) });
+  const project = await db.query.projects.findFirst({
+    where: and(eq(projects.id, id), eq(projects.userId, user.id)),
+  });
   if (!project) {
     return NextResponse.json({ error: "প্রজেক্ট পাওয়া যায়নি।" }, { status: 404 });
   }
+
+  const keys = await getUserApiKeys(user.id);
 
   const isFreshlyGenerating =
     project.generationStatus === "generating" && Date.now() - project.updatedAt < STALE_JOB_MS;
@@ -39,7 +50,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
   // instances), not in process memory, so any instance can serve the poll.
   (async () => {
     try {
-      const scenes = await generateScenesForScript(project.scriptText);
+      const scenes = await generateScenesForScript(project.scriptText, user.id, keys);
 
       // Regenerating on the same script can produce a different scene
       // breakdown (Gemini isn't deterministic, stock availability shifts) —
@@ -75,7 +86,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
         })
         .where(eq(projects.id, id));
 
-      sendTelegramMessage(`✅ "${project.title}" — ${scenes.length}টা দৃশ্য তৈরি হয়েছে, রিভিউর জন্য প্রস্তুত।`);
+      sendTelegramMessage(
+        `✅ "${project.title}" — ${scenes.length}টা দৃশ্য তৈরি হয়েছে, রিভিউর জন্য প্রস্তুত।`,
+        keys
+      );
     } catch (err) {
       await db
         .update(projects)
@@ -86,7 +100,10 @@ export async function POST(_req: NextRequest, { params }: Params) {
         })
         .where(eq(projects.id, id));
 
-      sendTelegramMessage(`❌ "${project.title}" — প্রসেসিং ব্যর্থ হয়েছে: ${(err as Error).message}`);
+      sendTelegramMessage(
+        `❌ "${project.title}" — প্রসেসিং ব্যর্থ হয়েছে: ${(err as Error).message}`,
+        keys
+      );
     }
   })();
 

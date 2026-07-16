@@ -1,12 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { createProjectSchema } from "@/lib/validation";
 import { titleFromScript, postedLinksFromRow } from "@/lib/projects";
+import { getSession } from "@/lib/auth/session";
 
 export async function GET() {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const rows = await db
     .select({
       id: projects.id,
@@ -21,6 +27,7 @@ export async function GET() {
       updatedAt: projects.updatedAt,
     })
     .from(projects)
+    .where(eq(projects.userId, user.id))
     .orderBy(desc(projects.updatedAt));
 
   const summaries = rows.map(({ postedUrl, postedPlatform, ...row }) => ({
@@ -32,6 +39,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const parsed = createProjectSchema.safeParse(await req.json());
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
@@ -42,6 +54,7 @@ export async function POST(req: NextRequest) {
 
   await db.insert(projects).values({
     id,
+    userId: user.id,
     title: parsed.data.title || titleFromScript(parsed.data.scriptText),
     scriptText: parsed.data.scriptText,
     scenes: "[]",

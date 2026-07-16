@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractScriptText } from "@/lib/parse-script";
+import { getSession } from "@/lib/auth/session";
 
 export async function POST(req: NextRequest) {
+  const user = await getSession();
+  if (!user) {
+    return NextResponse.json({ error: "লগইন করুন।" }, { status: 401 });
+  }
+
   const formData = await req.formData();
   const file = formData.get("file");
 
