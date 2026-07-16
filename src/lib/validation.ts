@@ -93,3 +93,7 @@ export const apiKeysSchema = z
 export const adminResetPasswordSchema = z.object({
   newPassword: z.string().min(8, "পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।"),
 });
+
+export const parseUrlSchema = z.object({
+  url: z.string().trim().url("সঠিক URL দিন।"),
+});

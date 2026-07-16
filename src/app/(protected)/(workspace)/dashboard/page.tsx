@@ -1,24 +1,65 @@
 "use client";
 
 import { useMemo } from "react";
-import { AlertTriangle } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { AlertTriangle, RotateCcw, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { SceneCard } from "@/components/scene-review/scene-card";
 import { VersionHistoryPanel } from "@/components/scene-review/version-history-panel";
 import { Badge } from "@/components/ui/badge";
-import { useScenes } from "@/hooks/use-scenes";
+import { Button } from "@/components/ui/button";
+import { useScenes, useProjectId } from "@/hooks/use-scenes";
 import { findDuplicateClipSceneIds } from "@/lib/client/duplicate-clips";
 
 export default function DashboardPage() {
+  const router = useRouter();
   const { scenes, isDemo } = useScenes();
+  const projectId = useProjectId();
   const matchedCount = scenes.filter((s) => s.status === "stock-match").length;
+  const aiPromptScenes = scenes.filter((s) => s.status === "ai-prompt" && s.aiPrompt);
   const duplicateClipSceneIds = useMemo(() => findDuplicateClipSceneIds(scenes), [scenes]);
+
+  function handleRegenerate() {
+    if (
+      !window.confirm(
+        "আবার Generate করলে নতুন করে AI credit ব্যবহার হবে এবং বর্তমান দৃশ্যগুলো ভার্সন হিস্টরিতে সেভ হয়ে যাবে। চালিয়ে যেতে চান?"
+      )
+    ) {
+      return;
+    }
+    router.push("/processing");
+  }
+
+  function handleCopyAllPrompts() {
+    const text = aiPromptScenes
+      .map((s, i) => `${i + 1}. ${s.title}\n${s.aiPrompt}`)
+      .join("\n\n");
+    navigator.clipboard.writeText(text);
+    toast.success(`${aiPromptScenes.length}টা AI prompt কপি হয়েছে`);
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 md:px-6">
       <div className="space-y-2">
-        <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl leading-8 font-semibold">Scene Review Dashboard</h1>
-          {isDemo && <Badge variant="secondary">ডেমো ডেটা</Badge>}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl leading-8 font-semibold">Scene Review Dashboard</h1>
+            {isDemo && <Badge variant="secondary">ডেমো ডেটা</Badge>}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {aiPromptScenes.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleCopyAllPrompts}>
+                <Copy className="size-4" strokeWidth={1.75} />
+                সব AI prompt কপি করুন
+              </Button>
+            )}
+            {!isDemo && projectId && (
+              <Button variant="outline" size="sm" onClick={handleRegenerate}>
+                <RotateCcw className="size-4" strokeWidth={1.75} />
+                আবার Generate করুন
+              </Button>
+            )}
+          </div>
         </div>
         <p className="text-sm leading-5 text-muted-foreground">
           মোট {scenes.length} টা দৃশ্য — {matchedCount} টায় স্টক ম্যাচ পাওয়া গেছে,{" "}

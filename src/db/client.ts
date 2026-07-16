@@ -18,10 +18,23 @@ function createClient() {
   // Several worker processes can open this file concurrently during `next
   // build`'s page-data collection (no cross-process module cache) — without
   // a busy timeout, better-sqlite3 throws SQLITE_BUSY immediately instead of
-  // waiting for a concurrent writer to finish. Bumped from 5000 to 15000
-  // (2026-07-16) since the auth migration added 3 more tables' worth of DDL,
-  // widening the contention window across the 19 parallel build workers.
+  // waiting for a concurrent writer to finish.
   sqlite.pragma("busy_timeout = 15000");
+
+  // Every CREATE/ALTER/bootstrap write below runs as one transaction instead
+  // of many separate statements — each statement is its own lock negotiation,
+  // so bundling them into a single BEGIN/COMMIT sharply cuts how often the 19
+  // parallel `next build` workers contend for the write lock at all (fixes
+  // recurring SQLITE_BUSY under the growing schema, 2026-07-16).
+  const migrate = sqlite.transaction(() => {
+    runMigrations(sqlite);
+  });
+  migrate();
+
+  return drizzle(sqlite, { schema });
+}
+
+function runMigrations(sqlite: Database.Database) {
   sqlite.exec(`
     CREATE TABLE IF NOT EXISTS projects (
       id TEXT PRIMARY KEY,
@@ -123,8 +136,6 @@ function createClient() {
   }
 
   bootstrapAdmin(sqlite);
-
-  return drizzle(sqlite, { schema });
 }
 
 // One-time migration for instances that had data before multi-user auth

@@ -9,7 +9,7 @@ export type RawStockMatch = {
   durationSeconds: number;
 };
 
-type PexelsVideoFile = { quality: string; link: string };
+type PexelsVideoFile = { quality: string; link: string; width?: number; height?: number };
 type PexelsVideo = {
   id: number;
   image: string;
@@ -17,14 +17,44 @@ type PexelsVideo = {
   video_files: PexelsVideoFile[];
 };
 
+type PixabayVideoRendition = { url: string; width: number; height: number; thumbnail?: string };
 type PixabayVideo = {
   id: number;
   duration: number;
   videos: {
-    medium: { url: string; thumbnail?: string };
+    large?: PixabayVideoRendition;
+    medium?: PixabayVideoRendition;
+    small?: PixabayVideoRendition;
+    tiny?: PixabayVideoRendition;
   };
   userImageURL: string;
 };
+
+const MIN_TARGET_HEIGHT = 720;
+const MAX_TARGET_HEIGHT = 1080;
+
+// Prefer a rendition in the 720p-1080p range (highest within it) — below
+// 720p looks noticeably soft in a finished video, and above 1080p is wasted
+// bandwidth/storage for this app's output. Falls back to whatever's closest
+// when nothing in-range is available (e.g. an old low-res clip).
+function pickBestRendition<T extends { width?: number; height?: number }>(
+  files: T[]
+): T | undefined {
+  const withHeight = files.filter((f) => f.height && f.height > 0);
+  if (withHeight.length === 0) return files[0];
+
+  const inRange = withHeight.filter(
+    (f) => f.height! >= MIN_TARGET_HEIGHT && f.height! <= MAX_TARGET_HEIGHT
+  );
+  if (inRange.length > 0) {
+    return inRange.sort((a, b) => b.height! - a.height!)[0];
+  }
+
+  const midpoint = (MIN_TARGET_HEIGHT + MAX_TARGET_HEIGHT) / 2;
+  return withHeight.sort(
+    (a, b) => Math.abs(a.height! - midpoint) - Math.abs(b.height! - midpoint)
+  )[0];
+}
 
 async function searchPexelsVideo(query: string, apiKey: string | null): Promise<RawStockMatch[]> {
   if (!apiKey) {
@@ -39,8 +69,7 @@ async function searchPexelsVideo(query: string, apiKey: string | null): Promise<
 
   const data: { videos: PexelsVideo[] } = await res.json();
   return (data.videos ?? []).map((v) => {
-    const file =
-      v.video_files.find((f) => f.quality === "sd") ?? v.video_files[0];
+    const file = pickBestRendition(v.video_files);
     return {
       id: `pexels-${v.id}`,
       source: "pexels" as const,
@@ -62,13 +91,19 @@ async function searchPixabayVideo(query: string, apiKey: string | null): Promise
   if (!res.ok) return [];
 
   const data: { hits: PixabayVideo[] } = await res.json();
-  return (data.hits ?? []).map((v) => ({
-    id: `pixabay-${v.id}`,
-    source: "pixabay" as const,
-    thumbnailUrl: v.videos.medium.thumbnail ?? v.userImageURL,
-    downloadUrl: v.videos.medium.url,
-    durationSeconds: v.duration,
-  }));
+  return (data.hits ?? []).map((v) => {
+    const renditions = [v.videos.large, v.videos.medium, v.videos.small, v.videos.tiny].filter(
+      (r): r is PixabayVideoRendition => !!r
+    );
+    const best = pickBestRendition(renditions);
+    return {
+      id: `pixabay-${v.id}`,
+      source: "pixabay" as const,
+      thumbnailUrl: best?.thumbnail ?? v.userImageURL,
+      downloadUrl: best?.url ?? "",
+      durationSeconds: v.duration,
+    };
+  });
 }
 
 export async function searchStockVideo(

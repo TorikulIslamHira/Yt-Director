@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { UploadCloud, FileText, X, AlertCircle, Loader2 } from "lucide-react";
+import { UploadCloud, FileText, X, AlertCircle, Loader2, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,10 +35,34 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [projectName, setProjectName] = useState("");
   const [pastedText, setPastedText] = useState("");
-  const [activeTab, setActiveTab] = useState<"file" | "paste" | "batch">("file");
+  const [activeTab, setActiveTab] = useState<"file" | "paste" | "url" | "batch">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [isExtracting, setIsExtracting] = useState(false);
+
+  async function handleExtractFromUrl() {
+    if (!sourceUrl.trim()) {
+      setError("একটা লিংক দিন।");
+      return;
+    }
+    setError(null);
+    setIsExtracting(true);
+    try {
+      const data = await fetchJson<{ text: string }>("/api/parse-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: sourceUrl.trim() }),
+      });
+      setPastedText(data.text);
+      setActiveTab("paste");
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setIsExtracting(false);
+    }
+  }
 
   function handleFileSelected(candidate: File | null) {
     if (!candidate) return;
@@ -129,7 +153,7 @@ export default function UploadPage() {
         </p>
       </div>
 
-      {activeTab !== "batch" && (
+      {activeTab !== "batch" && activeTab !== "url" && (
         <div className="space-y-1.5">
           <Label htmlFor="project-name">প্রজেক্টের নাম (ঐচ্ছিক)</Label>
           <Input
@@ -151,7 +175,7 @@ export default function UploadPage() {
           <Tabs
             value={activeTab}
             onValueChange={(v) => {
-              setActiveTab(v as "file" | "paste" | "batch");
+              setActiveTab(v as "file" | "paste" | "url" | "batch");
               setError(null);
             }}
           >
@@ -161,6 +185,9 @@ export default function UploadPage() {
               </TabsTrigger>
               <TabsTrigger value="paste" className="flex-1">
                 টেক্সট পেস্ট
+              </TabsTrigger>
+              <TabsTrigger value="url" className="flex-1">
+                URL থেকে
               </TabsTrigger>
               <TabsTrigger value="batch" className="flex-1">
                 একাধিক স্ক্রিপ্ট
@@ -238,6 +265,28 @@ export default function UploadPage() {
               </p>
             </TabsContent>
 
+            <TabsContent value="url" className="mt-4 space-y-3">
+              <div className="flex gap-2">
+                <Input
+                  value={sourceUrl}
+                  onChange={(e) => setSourceUrl(e.target.value)}
+                  placeholder="https://example.com/blog-post"
+                  type="url"
+                />
+                <Button onClick={handleExtractFromUrl} disabled={isExtracting}>
+                  {isExtracting ? (
+                    <Loader2 className="size-4 animate-spin" strokeWidth={1.75} />
+                  ) : (
+                    <Link2 className="size-4" strokeWidth={1.75} />
+                  )}
+                  বের করুন
+                </Button>
+              </div>
+              <p className="text-xs leading-4 text-muted-foreground">
+                লিংক থেকে মূল লেখাটা বের করে টেক্সট পেস্ট ট্যাবে দেখাবে — সেখান থেকে চাইলে সম্পাদনা করে তারপর প্রসেস করতে পারবেন।
+              </p>
+            </TabsContent>
+
             <TabsContent value="batch" className="mt-4">
               <BatchUploadPanel />
             </TabsContent>
@@ -252,7 +301,7 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
-      {activeTab !== "batch" && (
+      {activeTab !== "batch" && activeTab !== "url" && (
         <Button
           size="lg"
           className="w-full"
