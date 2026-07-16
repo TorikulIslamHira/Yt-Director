@@ -317,14 +317,14 @@ export default function HistoryPage() {
                     >
                       <Trash2 className="size-4" strokeWidth={1.75} />
                     </Button>
-                    {project.status === "draft" ? (
+                    {project.generationStatus === "idle" || project.generationStatus === "error" ? (
                       <Button
                         size="sm"
-                        disabled={busyId === project.id || project.generationStatus === "generating"}
+                        disabled={busyId === project.id}
                         onClick={() => handleStartProcessing(project.id)}
                       >
                         <PlayCircle className="size-4" strokeWidth={1.75} />
-                        প্রসেস শুরু করুন
+                        {project.generationStatus === "error" ? "আবার চেষ্টা করুন" : "প্রসেস শুরু করুন"}
                       </Button>
                     ) : (
                       <Button size="sm" disabled={busyId === project.id} onClick={() => handleResume(project.id)}>

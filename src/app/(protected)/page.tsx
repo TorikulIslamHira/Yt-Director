@@ -197,20 +197,20 @@ export default function UploadPage() {
               setError(null);
             }}
           >
-            <TabsList className="w-full">
-              <TabsTrigger value="file" className="flex-1">
+            <TabsList className="w-full justify-start overflow-x-auto">
+              <TabsTrigger value="file" className="shrink-0">
                 ফাইল আপলোড
               </TabsTrigger>
-              <TabsTrigger value="paste" className="flex-1">
+              <TabsTrigger value="paste" className="shrink-0">
                 টেক্সট পেস্ট
               </TabsTrigger>
-              <TabsTrigger value="url" className="flex-1">
+              <TabsTrigger value="url" className="shrink-0">
                 URL থেকে
               </TabsTrigger>
-              <TabsTrigger value="template" className="flex-1">
+              <TabsTrigger value="template" className="shrink-0">
                 টেমপ্লেট
               </TabsTrigger>
-              <TabsTrigger value="batch" className="flex-1">
+              <TabsTrigger value="batch" className="shrink-0">
                 একাধিক স্ক্রিপ্ট
               </TabsTrigger>
             </TabsList>

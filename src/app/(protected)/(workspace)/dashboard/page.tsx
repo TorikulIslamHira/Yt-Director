@@ -8,6 +8,7 @@ import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type D
 import { SortableContext, rectSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { SceneCard } from "@/components/scene-review/scene-card";
 import { VersionHistoryPanel } from "@/components/scene-review/version-history-panel";
+import { ActiveProjectsPanel } from "@/components/scene-review/active-projects-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useScenes, useProjectId } from "@/hooks/use-scenes";
@@ -89,6 +90,8 @@ export default function DashboardPage() {
           <span>{duplicateClipSceneIds.size}টা দৃশ্যে একই স্টক ক্লিপ পুনরায় ব্যবহার হয়েছে — ক্লিপ বদলাতে দৃশ্যের বিস্তারিত থেকে অন্য একটা বেছে নিন।</span>
         </div>
       )}
+
+      <ActiveProjectsPanel />
 
       <VersionHistoryPanel />
 

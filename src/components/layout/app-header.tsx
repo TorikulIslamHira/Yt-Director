@@ -56,9 +56,14 @@ export function AppHeader({ user }: AppHeaderProps) {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" aria-label="অ্যাকাউন্ট মেনু" className="gap-1.5 pl-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="অ্যাকাউন্ট মেনু"
+                className="w-auto gap-0.5 px-1.5"
+              >
                 <User className="size-5" strokeWidth={1.75} />
-                <ChevronDown className="size-3.5 text-muted-foreground" strokeWidth={1.75} />
+                <ChevronDown className="size-3 text-muted-foreground" strokeWidth={1.75} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
