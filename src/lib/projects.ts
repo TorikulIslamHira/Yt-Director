@@ -97,3 +97,22 @@ export function titleFromScript(text: string): string {
   const oneLine = text.trim().replace(/\s+/g, " ");
   return oneLine.length > 60 ? `${oneLine.slice(0, 60)}…` : oneLine || "শিরোনামহীন স্ক্রিপ্ট";
 }
+
+export type ShareView = {
+  title: string;
+  scenes: Scene[];
+  bgm: BgmInfo | null;
+  createdAt: number;
+};
+
+// Narrow, explicit view for the public (unauthenticated) share route —
+// deliberately excludes scriptText and everything else on Project so the
+// exclusion lives in one place rather than being trusted per-route.
+export function toShareView(project: Project): ShareView {
+  return {
+    title: project.title,
+    scenes: project.scenes,
+    bgm: project.bgm,
+    createdAt: project.createdAt,
+  };
+}

@@ -2,7 +2,20 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Copy, Download, ImageOff, Clock, MoreVertical, ArrowUp, ArrowDown, Trash2, AlertTriangle } from "lucide-react";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  Copy,
+  Download,
+  ImageOff,
+  Clock,
+  MoreVertical,
+  ArrowUp,
+  ArrowDown,
+  Trash2,
+  AlertTriangle,
+  GripVertical,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -32,6 +45,16 @@ export function SceneCard({
   const [detailOpen, setDetailOpen] = useState(false);
   const isMatch = scene.status === "stock-match";
   const thumbnail = scene.stockMatches[0]?.thumbnailUrl;
+
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: scene.id,
+  });
+  const dragStyle = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
 
   async function handleCopyPrompt() {
     if (!scene.aiPrompt) return;
@@ -63,7 +86,7 @@ export function SceneCard({
 
   return (
     <>
-      <Card className="overflow-hidden py-0 gap-0">
+      <Card ref={setNodeRef} style={dragStyle} className="overflow-hidden py-0 gap-0">
         <div className="relative aspect-video w-full bg-muted">
           {thumbnail ? (
             <Image src={thumbnail} alt={scene.title} fill className="object-cover" unoptimized />
@@ -78,32 +101,44 @@ export function SceneCard({
           >
             {isMatch ? "স্টক ম্যাচ" : "এআই প্রম্পট"}
           </Badge>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                size="icon-sm"
-                variant="outline"
-                className="absolute top-2 right-2 bg-card"
-                aria-label="দৃশ্য অপশন"
-              >
-                <MoreVertical className="size-3.5" strokeWidth={1.75} />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem disabled={isFirst} onSelect={() => handleMove("up")}>
-                <ArrowUp className="size-4" strokeWidth={1.75} />
-                উপরে সরান
-              </DropdownMenuItem>
-              <DropdownMenuItem disabled={isLast} onSelect={() => handleMove("down")}>
-                <ArrowDown className="size-4" strokeWidth={1.75} />
-                নিচে সরান
-              </DropdownMenuItem>
-              <DropdownMenuItem variant="destructive" onSelect={handleDelete}>
-                <Trash2 className="size-4" strokeWidth={1.75} />
-                মুছে ফেলুন
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="absolute top-2 right-2 flex gap-1">
+            <Button
+              size="icon-sm"
+              variant="outline"
+              className="bg-card cursor-grab touch-none active:cursor-grabbing"
+              aria-label="দৃশ্য টেনে সাজান"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="size-3.5" strokeWidth={1.75} />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  size="icon-sm"
+                  variant="outline"
+                  className="bg-card"
+                  aria-label="দৃশ্য অপশন"
+                >
+                  <MoreVertical className="size-3.5" strokeWidth={1.75} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem disabled={isFirst} onSelect={() => handleMove("up")}>
+                  <ArrowUp className="size-4" strokeWidth={1.75} />
+                  উপরে সরান
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={isLast} onSelect={() => handleMove("down")}>
+                  <ArrowDown className="size-4" strokeWidth={1.75} />
+                  নিচে সরান
+                </DropdownMenuItem>
+                <DropdownMenuItem variant="destructive" onSelect={handleDelete}>
+                  <Trash2 className="size-4" strokeWidth={1.75} />
+                  মুছে ফেলুন
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         <CardContent className="space-y-1.5 pt-4">

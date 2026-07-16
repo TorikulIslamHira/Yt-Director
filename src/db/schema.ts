@@ -64,3 +64,22 @@ export const userApiKeys = sqliteTable("user_api_keys", {
 });
 
 export type UserApiKeysRow = typeof userApiKeys.$inferSelect;
+
+export const scriptTemplates = sqliteTable("script_templates", {
+  id: text("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  title: text("title").notNull(),
+  scriptText: text("script_text").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+export type ScriptTemplateRow = typeof scriptTemplates.$inferSelect;
+
+export const projectShareLinks = sqliteTable("project_share_links", {
+  token: text("token").primaryKey(),
+  projectId: text("project_id").notNull().unique(),
+  userId: text("user_id").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+export type ProjectShareLinkRow = typeof projectShareLinks.$inferSelect;

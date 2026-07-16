@@ -13,6 +13,7 @@ import {
   Search,
   PlayCircle,
   Loader2,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AddPostedLinkDialog } from "@/components/history/add-posted-link-dialog";
+import { ShareLinkDialog } from "@/components/history/share-link-dialog";
 import { WeeklyCompletedChart } from "@/components/history/weekly-completed-chart";
 import type { Project, ProjectStatus } from "@/types/scene";
 import { saveScriptText, saveScenes, saveProjectId, saveBgm } from "@/lib/client/scene-storage";
@@ -74,6 +76,7 @@ export default function HistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [linkDialogProjectId, setLinkDialogProjectId] = useState<string | null>(null);
+  const [shareDialogProjectId, setShareDialogProjectId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus | "all">("all");
 
@@ -285,6 +288,15 @@ export default function HistoryPage() {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busyId === project.id}
+                      onClick={() => setShareDialogProjectId(project.id)}
+                      aria-label="শেয়ার লিংক"
+                    >
+                      <Link2 className="size-4" strokeWidth={1.75} />
+                    </Button>
                     {project.status === "editing" && (
                       <Button
                         size="sm"
@@ -364,6 +376,14 @@ export default function HistoryPage() {
               ) ?? null
             );
           }}
+        />
+      )}
+
+      {shareDialogProjectId && (
+        <ShareLinkDialog
+          projectId={shareDialogProjectId}
+          open={shareDialogProjectId !== null}
+          onOpenChange={(open) => !open && setShareDialogProjectId(null)}
         />
       )}
     </main>

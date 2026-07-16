@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { UploadCloud, FileText, X, AlertCircle, Loader2, Link2 } from "lucide-react";
+import { UploadCloud, FileText, X, AlertCircle, Loader2, Link2, BookmarkPlus } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +19,7 @@ import {
 import { saveScriptText, saveProjectId } from "@/lib/client/scene-storage";
 import { fetchJson } from "@/lib/client/fetch-json";
 import { BatchUploadPanel } from "@/components/upload/batch-upload-panel";
+import { TemplatesPanel } from "@/components/upload/templates-panel";
 
 const ACCEPTED_EXTENSIONS = [".doc", ".docx", ".txt", ".pdf"];
 const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
@@ -35,12 +37,28 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [projectName, setProjectName] = useState("");
   const [pastedText, setPastedText] = useState("");
-  const [activeTab, setActiveTab] = useState<"file" | "paste" | "url" | "batch">("file");
+  const [activeTab, setActiveTab] = useState<"file" | "paste" | "url" | "template" | "batch">("file");
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [sourceUrl, setSourceUrl] = useState("");
   const [isExtracting, setIsExtracting] = useState(false);
+
+  async function handleSaveTemplate() {
+    if (pastedText.trim().length < MIN_PASTE_LENGTH) return;
+    const title = window.prompt("টেমপ্লেটের নাম দিন:");
+    if (!title || !title.trim()) return;
+    try {
+      await fetchJson("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: title.trim(), scriptText: pastedText.trim() }),
+      });
+      toast.success("টেমপ্লেট সেভ হয়েছে");
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
 
   async function handleExtractFromUrl() {
     if (!sourceUrl.trim()) {
@@ -153,7 +171,7 @@ export default function UploadPage() {
         </p>
       </div>
 
-      {activeTab !== "batch" && activeTab !== "url" && (
+      {(activeTab === "file" || activeTab === "paste") && (
         <div className="space-y-1.5">
           <Label htmlFor="project-name">প্রজেক্টের নাম (ঐচ্ছিক)</Label>
           <Input
@@ -175,7 +193,7 @@ export default function UploadPage() {
           <Tabs
             value={activeTab}
             onValueChange={(v) => {
-              setActiveTab(v as "file" | "paste" | "url" | "batch");
+              setActiveTab(v as "file" | "paste" | "url" | "template" | "batch");
               setError(null);
             }}
           >
@@ -188,6 +206,9 @@ export default function UploadPage() {
               </TabsTrigger>
               <TabsTrigger value="url" className="flex-1">
                 URL থেকে
+              </TabsTrigger>
+              <TabsTrigger value="template" className="flex-1">
+                টেমপ্লেট
               </TabsTrigger>
               <TabsTrigger value="batch" className="flex-1">
                 একাধিক স্ক্রিপ্ট
@@ -260,9 +281,20 @@ export default function UploadPage() {
                 placeholder="এখানে আপনার স্ক্রিপ্ট পেস্ট করুন..."
                 className="min-h-48 resize-y"
               />
-              <p className="mt-1 text-right text-xs leading-4 text-muted-foreground">
-                {pastedText.trim().length} ক্যারেক্টার
-              </p>
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={pastedText.trim().length < MIN_PASTE_LENGTH}
+                  onClick={handleSaveTemplate}
+                >
+                  <BookmarkPlus className="size-4" strokeWidth={1.75} />
+                  টেমপ্লেট হিসেবে সেভ করুন
+                </Button>
+                <p className="text-right text-xs leading-4 text-muted-foreground">
+                  {pastedText.trim().length} ক্যারেক্টার
+                </p>
+              </div>
             </TabsContent>
 
             <TabsContent value="url" className="mt-4 space-y-3">
@@ -287,6 +319,15 @@ export default function UploadPage() {
               </p>
             </TabsContent>
 
+            <TabsContent value="template" className="mt-4">
+              <TemplatesPanel
+                onUse={(scriptText) => {
+                  setPastedText(scriptText);
+                  setActiveTab("paste");
+                }}
+              />
+            </TabsContent>
+
             <TabsContent value="batch" className="mt-4">
               <BatchUploadPanel />
             </TabsContent>
@@ -301,7 +342,7 @@ export default function UploadPage() {
         </CardContent>
       </Card>
 
-      {activeTab !== "batch" && activeTab !== "url" && (
+      {(activeTab === "file" || activeTab === "paste") && (
         <Button
           size="lg"
           className="w-full"

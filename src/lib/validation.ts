@@ -97,3 +97,8 @@ export const adminResetPasswordSchema = z.object({
 export const parseUrlSchema = z.object({
   url: z.string().trim().url("সঠিক URL দিন।"),
 });
+
+export const createTemplateSchema = z.object({
+  title: z.string().trim().min(1, "নাম দিন।").max(120),
+  scriptText: z.string().min(20, "স্ক্রিপ্ট অন্তত ২০ ক্যারেক্টার হতে হবে।"),
+});

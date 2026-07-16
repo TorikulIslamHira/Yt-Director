@@ -108,6 +108,25 @@ function runMigrations(sqlite: Database.Database) {
     );
   `);
 
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS script_templates (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      script_text TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+  `);
+
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS project_share_links (
+      token TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL UNIQUE,
+      user_id TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+  `);
+
   // Migrate DBs created before status/posted_url/posted_platform/posted_links/completed_at/
   // generation_status/generation_error/previous_versions/user_id existed. Several worker
   // processes can open this file concurrently during `next build`'s page-data collection (no

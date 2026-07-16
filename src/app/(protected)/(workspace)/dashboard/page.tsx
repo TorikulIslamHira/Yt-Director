@@ -4,12 +4,15 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, RotateCcw, Copy } from "lucide-react";
 import { toast } from "sonner";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
+import { SortableContext, rectSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { SceneCard } from "@/components/scene-review/scene-card";
 import { VersionHistoryPanel } from "@/components/scene-review/version-history-panel";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useScenes, useProjectId } from "@/hooks/use-scenes";
 import { findDuplicateClipSceneIds } from "@/lib/client/duplicate-clips";
+import { mutateScenes } from "@/lib/client/scene-storage";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -18,6 +21,19 @@ export default function DashboardPage() {
   const matchedCount = scenes.filter((s) => s.status === "stock-match").length;
   const aiPromptScenes = scenes.filter((s) => s.status === "ai-prompt" && s.aiPrompt);
   const duplicateClipSceneIds = useMemo(() => findDuplicateClipSceneIds(scenes), [scenes]);
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const result = await mutateScenes((current) => {
+      const oldIndex = current.findIndex((s) => s.id === active.id);
+      const newIndex = current.findIndex((s) => s.id === over.id);
+      if (oldIndex === -1 || newIndex === -1) return current;
+      return arrayMove(current, oldIndex, newIndex);
+    });
+    if (result === null) toast.error("ডেমো ডেটাতে সাজানো যাবে না।");
+  }
 
   function handleRegenerate() {
     if (
@@ -76,17 +92,21 @@ export default function DashboardPage() {
 
       <VersionHistoryPanel />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {scenes.map((scene, i) => (
-          <SceneCard
-            key={scene.id}
-            scene={scene}
-            isFirst={i === 0}
-            isLast={i === scenes.length - 1}
-            isDuplicateClip={duplicateClipSceneIds.has(scene.id)}
-          />
-        ))}
-      </div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={scenes.map((s) => s.id)} strategy={rectSortingStrategy}>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {scenes.map((scene, i) => (
+              <SceneCard
+                key={scene.id}
+                scene={scene}
+                isFirst={i === 0}
+                isLast={i === scenes.length - 1}
+                isDuplicateClip={duplicateClipSceneIds.has(scene.id)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
     </main>
   );
 }
