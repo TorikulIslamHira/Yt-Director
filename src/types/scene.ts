@@ -63,6 +63,7 @@ export type Project = {
   renderStatus: RenderStatus;
   renderError: string | null;
   hasFinalVideo: boolean;
+  assignedAgentId: string | null;
   createdAt: number;
   updatedAt: number;
 };

@@ -98,6 +98,7 @@ export function rowToProject(row: ProjectRow): Project {
     renderStatus,
     renderError: row.renderError ?? null,
     hasFinalVideo: Boolean(row.finalVideoPath),
+    assignedAgentId: row.assignedAgentId ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

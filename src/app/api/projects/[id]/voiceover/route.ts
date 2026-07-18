@@ -16,7 +16,7 @@ function voiceoverPathFor(id: string): string {
 
 // Editor uploads the voiceover once script + scenes are locked in. This is
 // what queues the project for the render agent (renderStatus -> "pending");
-// see GET /api/render-jobs/next for the agent-side claim.
+// see GET /api/render-agent/next-job for the agent-side claim.
 export async function POST(req: NextRequest, { params }: Params) {
   const user = await getSession();
   if (!user) {

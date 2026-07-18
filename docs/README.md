@@ -87,7 +87,7 @@ npm run dev
 *   ✅ Tech stack locked
 *   ✅ Design guide and UX guidelines planned
 *   🚧 Frontend components — in progress
-*   ✅ Render-agent handoff routes — `/api/projects/:id/voiceover`, `/api/render-jobs/*`, `/api/projects/:id/video` (see `docs/CONTRACT.md`)
+*   ✅ Render-agent handoff routes — `/api/projects/:id/voiceover`, `/api/render-agent/*`, `/api/projects/:id/video` (see `docs/CONTRACT.md`)
 *   ✅ `yt-direct-render-agent` — built in `faceless-yt-auto/render-agent/`, deploy is a manual step on the editor's own PC (see that repo's `render-agent/SETUP.md`)
 *   ⏳ Scene Review UI: no "pick this stock clip" action yet — agent defaults to the first candidate per scene (see `docs/CONTRACT.md` known gap)
 

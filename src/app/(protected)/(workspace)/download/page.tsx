@@ -12,6 +12,7 @@ import { buildFcpxml } from "@/lib/build-fcpxml";
 import { downloadBlob, downloadProxyUrl } from "@/lib/client/download-blob";
 import { VideoMetadataCard } from "@/components/download/video-metadata-card";
 import { RoughCutPreview } from "@/components/download/rough-cut-preview";
+import { RenderAgentCard } from "@/components/download/render-agent-card";
 
 export default function DownloadPage() {
   const { scenes, isDemo } = useScenes();
@@ -86,6 +87,8 @@ export default function DownloadPage() {
       </Button>
 
       <RoughCutPreview scenes={scenes} bgm={bgm} projectId={projectId} />
+
+      <RenderAgentCard projectId={projectId} />
 
       <Card>
         <CardContent className="space-y-2">

@@ -49,10 +49,16 @@ export const updateProjectSchema = z
     scenes: z.array(sceneSchema).optional(),
     bgm: bgmInfoSchema.optional(),
     status: z.enum(["draft", "editing", "completed"]).optional(),
+    assignedAgentId: z.string().nullable().optional(),
   })
-  .refine((data) => data.scenes !== undefined || data.bgm !== undefined || data.status !== undefined, {
-    message: "scenes, bgm বা status এর একটি অন্তত দিতে হবে।",
-  });
+  .refine(
+    (data) =>
+      data.scenes !== undefined ||
+      data.bgm !== undefined ||
+      data.status !== undefined ||
+      data.assignedAgentId !== undefined,
+    { message: "scenes, bgm, status বা assignedAgentId এর একটি অন্তত দিতে হবে।" }
+  );
 
 export const addPostedLinkSchema = z.object({
   url: z.string().trim().url("সঠিক একটা লিংক দিন।"),

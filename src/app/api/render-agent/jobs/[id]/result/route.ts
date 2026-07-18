@@ -10,8 +10,7 @@ type Params = { params: Promise<{ id: string }> };
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024 * 1024;
 
-// Render agent reports back here once it finishes (or fails) the job it
-// claimed via GET /api/render-jobs/next. See docs/CONTRACT.md.
+// Agent reports a successful render here. See docs/CONTRACT.md.
 export async function POST(req: NextRequest, { params }: Params) {
   if (!isAuthorizedAgent(req)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -24,15 +23,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   const formData = await req.formData();
-  const error = formData.get("error");
-  if (typeof error === "string" && error.trim() !== "") {
-    await db
-      .update(projects)
-      .set({ renderStatus: "failed", renderError: error.slice(0, 2000), updatedAt: Date.now() })
-      .where(eq(projects.id, id));
-    return NextResponse.json({ ok: true });
-  }
-
   const file = formData.get("video");
   if (!(file instanceof File) || file.size <= 0) {
     return NextResponse.json({ error: "video ফাইল পাওয়া যায়নি।" }, { status: 400 });

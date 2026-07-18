@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, eq, isNull, or } from "drizzle-orm";
 import { db } from "@/db/client";
 import { projects } from "@/db/schema";
 import { isAuthorizedAgent } from "@/lib/auth/agent";
@@ -14,8 +14,15 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  const agentId = req.nextUrl.searchParams.get("agentId") || "";
+  // Only jobs unassigned or pinned to this agent — an unrecognized/missing
+  // agentId still only ever sees unassigned jobs, never someone else's pin.
+  const assignmentFilter = agentId
+    ? or(isNull(projects.assignedAgentId), eq(projects.assignedAgentId, agentId))
+    : isNull(projects.assignedAgentId);
+
   const candidate = await db.query.projects.findFirst({
-    where: eq(projects.renderStatus, "pending"),
+    where: and(eq(projects.renderStatus, "pending"), assignmentFilter),
     orderBy: asc(projects.updatedAt),
   });
   if (!candidate) {
@@ -26,7 +33,7 @@ export async function GET(req: NextRequest) {
   const claimed = await db
     .update(projects)
     .set({ renderStatus: "claimed", renderClaimedAt: now, updatedAt: now })
-    .where(and(eq(projects.id, candidate.id), eq(projects.renderStatus, "pending")))
+    .where(and(eq(projects.id, candidate.id), eq(projects.renderStatus, "pending"), assignmentFilter))
     .returning();
 
   // Someone else (or a second poll) claimed it between the read and the
@@ -52,20 +59,6 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const unresolvedScene = scenes.find((s) => resolveClipUrl(s) === null);
-  if (unresolvedScene) {
-    await db
-      .update(projects)
-      .set({
-        renderStatus: "failed",
-        renderError: `দৃশ্য "${unresolvedScene.title}"-এর জন্য কোনো স্টক ক্লিপ বা AI ভিডিও যুক্ত করা নেই — render agent এই স্কিপ ধাপগুলো অটোমেট করে না।`,
-        updatedAt: Date.now(),
-      })
-      .where(eq(projects.id, row.id));
-
-    return NextResponse.json({ job: null });
-  }
-
   const voiceoverExists = row.voiceoverPath
     ? await fs
         .access(row.voiceoverPath)
@@ -89,15 +82,26 @@ export async function GET(req: NextRequest) {
     job: {
       projectId: row.id,
       title: row.title,
-      scenes: scenes.map((s) => ({
-        id: s.id,
-        index: s.index,
-        estimatedDurationSeconds: s.estimatedDurationSeconds,
-        clipUrl: resolveClipUrl(s),
-      })),
+      scenes: scenes
+        .slice()
+        .sort((a, b) => a.index - b.index)
+        .map((s) => ({
+          id: s.id,
+          index: s.index,
+          // The exact script sentence for this scene (guaranteed by the
+          // Gemini segmentation prompt, see lib/integrations/gemini.ts) —
+          // the agent sequentially matches this against the whisper
+          // transcript to derive this scene's real {startSec, endSec}.
+          text: s.description,
+          estimatedDurationSeconds: s.estimatedDurationSeconds,
+          // Null for ai-prompt scenes with no stock match — the agent
+          // renders a placeholder card for those instead of failing the job.
+          clipUrl: resolveClipUrl(s),
+        })),
       bgm,
-      voiceoverUrl: `/api/render-jobs/${row.id}/voiceover`,
-      completeUrl: `/api/render-jobs/${row.id}/complete`,
+      voiceoverUrl: `/api/render-agent/audio/${row.id}`,
+      resultUrl: `/api/render-agent/jobs/${row.id}/result`,
+      failUrl: `/api/render-agent/jobs/${row.id}/fail`,
     },
   });
 }

@@ -41,6 +41,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   const updates: Partial<typeof projects.$inferInsert> = { updatedAt: Date.now() };
   if (parsed.data.scenes) updates.scenes = JSON.stringify(parsed.data.scenes);
   if (parsed.data.bgm) updates.bgm = JSON.stringify(parsed.data.bgm);
+  if (parsed.data.assignedAgentId !== undefined) updates.assignedAgentId = parsed.data.assignedAgentId;
 
   const current = await db.query.projects.findFirst({
     where: and(eq(projects.id, id), eq(projects.userId, user.id)),

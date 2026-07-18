@@ -26,11 +26,28 @@ export const projects = sqliteTable("projects", {
   renderClaimedAt: integer("render_claimed_at"),
   renderError: text("render_error"),
   finalVideoPath: text("final_video_path"),
+  // Optional pin to one render agent (see `agents` table below). Null means
+  // "any online agent" — next-job returns it to whichever agent polls first.
+  assignedAgentId: text("assigned_agent_id"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
 
 export type ProjectRow = typeof projects.$inferSelect;
+
+// A render agent registers itself just by sending heartbeats — there's no
+// separate "register" step. "Online" is computed from lastHeartbeatAt
+// recency (< 60s), not stored, so a crashed/closed agent ages out on its
+// own with no cleanup job needed.
+export const agents = sqliteTable("agents", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  gpuType: text("gpu_type").notNull().default("cpu"),
+  lastHeartbeatAt: integer("last_heartbeat_at").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
+export type AgentRow = typeof agents.$inferSelect;
 
 // id doubles as the owning user's id (was a single hardcoded "global" row
 // before multi-user support, 2026-07-16).

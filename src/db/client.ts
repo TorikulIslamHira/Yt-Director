@@ -131,6 +131,16 @@ function runMigrations(sqlite: Database.Database) {
     );
   `);
 
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS agents (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      gpu_type TEXT NOT NULL DEFAULT 'cpu',
+      last_heartbeat_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+  `);
+
   // Migrate DBs created before status/posted_url/posted_platform/posted_links/completed_at/
   // generation_status/generation_error/previous_versions/user_id existed. Several worker
   // processes can open this file concurrently during `next build`'s page-data collection (no
@@ -154,6 +164,7 @@ function runMigrations(sqlite: Database.Database) {
     ["render_claimed_at", "ALTER TABLE projects ADD COLUMN render_claimed_at INTEGER"],
     ["render_error", "ALTER TABLE projects ADD COLUMN render_error TEXT"],
     ["final_video_path", "ALTER TABLE projects ADD COLUMN final_video_path TEXT"],
+    ["assigned_agent_id", "ALTER TABLE projects ADD COLUMN assigned_agent_id TEXT"],
   ] as const) {
     if (existingColumns.has(column)) continue;
     try {
