@@ -68,7 +68,7 @@ Video rendering is intentionally **pull-based** — the website queues a render 
 
 ## 📦 Related repositories
 
-*   **yt-direct-render-agent** — the final video assembly agent, fully independent from this repo, connected only via HTTP API. Endpoints and payload contract are documented in `CONTRACT.md` in both repos.
+*   **yt-direct-render-agent** — the final video assembly agent. Lives in the `faceless-yt-auto` repo under `render-agent/` (built by adapting that repo's existing whisper + ffmpeg pipeline into a pull-based poller), connected to this repo only via HTTP API. Endpoints and payload contract are documented in `docs/CONTRACT.md` in both repos.
 
 ## 🚀 Running locally
 
@@ -87,8 +87,9 @@ npm run dev
 *   ✅ Tech stack locked
 *   ✅ Design guide and UX guidelines planned
 *   🚧 Frontend components — in progress
-*   🚧 Backend agent routes — in progress
-*   ⏳ Render agent repo setup — planned, build pending
+*   ✅ Render-agent handoff routes — `/api/projects/:id/voiceover`, `/api/render-jobs/*`, `/api/projects/:id/video` (see `docs/CONTRACT.md`)
+*   ✅ `yt-direct-render-agent` — built in `faceless-yt-auto/render-agent/`, deploy is a manual step on the editor's own PC (see that repo's `render-agent/SETUP.md`)
+*   ⏳ Scene Review UI: no "pick this stock clip" action yet — agent defaults to the first candidate per scene (see `docs/CONTRACT.md` known gap)
 
 ## 🧭 Design principles
 

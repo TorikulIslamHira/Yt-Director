@@ -16,6 +16,7 @@ export const sceneSchema = z.object({
   estimatedDurationSeconds: z.number(),
   status: z.enum(["stock-match", "ai-prompt"]),
   stockMatches: z.array(stockMatchSchema),
+  selectedMatchId: z.string().nullable(),
   aiPrompt: z.string().nullable(),
   editingNote: z.string(),
 });

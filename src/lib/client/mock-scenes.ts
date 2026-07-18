@@ -24,6 +24,7 @@ export const mockScenes: Scene[] = [
         durationSeconds: 7,
       },
     ],
+    selectedMatchId: null,
     aiPrompt: null,
     editingNote: "স্লো ফেড-ইন দিয়ে শুরু করুন।",
   },
@@ -35,6 +36,7 @@ export const mockScenes: Scene[] = [
     estimatedDurationSeconds: 6,
     status: "ai-prompt",
     stockMatches: [],
+    selectedMatchId: null,
     aiPrompt:
       "Aerial drone shot of a busy city street at night, neon lights reflecting on wet asphalt, fast-moving traffic light trails, cinematic, 6 seconds.",
     editingNote: "ট্রানজিশনে দ্রুত কাট ব্যবহার করুন।",
@@ -55,6 +57,7 @@ export const mockScenes: Scene[] = [
         durationSeconds: 6,
       },
     ],
+    selectedMatchId: null,
     aiPrompt: null,
     editingNote: "",
   },
@@ -66,6 +69,7 @@ export const mockScenes: Scene[] = [
     estimatedDurationSeconds: 7,
     status: "ai-prompt",
     stockMatches: [],
+    selectedMatchId: null,
     aiPrompt:
       "Wide cinematic shot from a mountain peak above the clouds, sweeping mountain range, golden hour lighting, 7 seconds.",
     editingNote: "",

@@ -9,8 +9,12 @@ import { hashPassword, encryptSecret } from "@/lib/crypto";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "app.db");
 export const BGM_DIR = path.join(DATA_DIR, "bgm");
+export const VOICEOVER_DIR = path.join(DATA_DIR, "voiceover");
+export const RENDER_DIR = path.join(DATA_DIR, "renders");
 
 fs.mkdirSync(BGM_DIR, { recursive: true });
+fs.mkdirSync(VOICEOVER_DIR, { recursive: true });
+fs.mkdirSync(RENDER_DIR, { recursive: true });
 
 function createClient() {
   const sqlite = new Database(DB_PATH);
@@ -145,6 +149,11 @@ function runMigrations(sqlite: Database.Database) {
     ["generation_error", "ALTER TABLE projects ADD COLUMN generation_error TEXT"],
     ["previous_versions", "ALTER TABLE projects ADD COLUMN previous_versions TEXT NOT NULL DEFAULT '[]'"],
     ["user_id", "ALTER TABLE projects ADD COLUMN user_id TEXT"],
+    ["voiceover_path", "ALTER TABLE projects ADD COLUMN voiceover_path TEXT"],
+    ["render_status", "ALTER TABLE projects ADD COLUMN render_status TEXT NOT NULL DEFAULT 'none'"],
+    ["render_claimed_at", "ALTER TABLE projects ADD COLUMN render_claimed_at INTEGER"],
+    ["render_error", "ALTER TABLE projects ADD COLUMN render_error TEXT"],
+    ["final_video_path", "ALTER TABLE projects ADD COLUMN final_video_path TEXT"],
   ] as const) {
     if (existingColumns.has(column)) continue;
     try {

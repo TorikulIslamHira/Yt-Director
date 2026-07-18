@@ -24,6 +24,7 @@ export async function generateScenesForScript(
         estimatedDurationSeconds: s.estimatedDurationSeconds,
         status: hasMatch ? "stock-match" : "ai-prompt",
         stockMatches,
+        selectedMatchId: null,
         aiPrompt: hasMatch ? null : s.aiPrompt,
         editingNote: "",
       } satisfies Scene;

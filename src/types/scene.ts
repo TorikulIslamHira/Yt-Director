@@ -14,6 +14,11 @@ export type Scene = {
   estimatedDurationSeconds: number;
   status: "stock-match" | "ai-prompt";
   stockMatches: StockMatch[];
+  // Which stockMatches[].id the editor picked. Null = not decided yet; the
+  // render agent falls back to stockMatches[0] in that case (see
+  // docs/CONTRACT.md). Not yet settable from the UI — a future Scene Review
+  // action should write this.
+  selectedMatchId: string | null;
   aiPrompt: string | null;
   editingNote: string;
 };
@@ -35,6 +40,8 @@ export type PostedLink = {
 
 export type GenerationStatus = "idle" | "generating" | "done" | "error";
 
+export type RenderStatus = "none" | "pending" | "claimed" | "done" | "failed";
+
 export type ProjectVersion = {
   scenes: Scene[];
   savedAt: number;
@@ -52,6 +59,10 @@ export type Project = {
   generationStatus: GenerationStatus;
   generationError: string | null;
   previousVersions: ProjectVersion[];
+  hasVoiceover: boolean;
+  renderStatus: RenderStatus;
+  renderError: string | null;
+  hasFinalVideo: boolean;
   createdAt: number;
   updatedAt: number;
 };

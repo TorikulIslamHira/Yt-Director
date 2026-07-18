@@ -6,6 +6,7 @@ import type {
   Project,
   ProjectStatus,
   ProjectVersion,
+  RenderStatus,
   Scene,
 } from "@/types/scene";
 import type { ProjectRow } from "@/db/schema";
@@ -13,6 +14,7 @@ import type { ProjectRow } from "@/db/schema";
 const VALID_STATUSES: ProjectStatus[] = ["draft", "editing", "completed"];
 const VALID_PLATFORMS: PostedPlatform[] = ["youtube", "facebook", "other"];
 const VALID_GENERATION_STATUSES: GenerationStatus[] = ["idle", "generating", "done", "error"];
+const VALID_RENDER_STATUSES: RenderStatus[] = ["none", "pending", "claimed", "done", "failed"];
 
 export function postedLinksFromRow(row: {
   postedLinks: string;
@@ -76,6 +78,10 @@ export function rowToProject(row: ProjectRow): Project {
     previousVersions = [];
   }
 
+  const renderStatus: RenderStatus = VALID_RENDER_STATUSES.includes(row.renderStatus as RenderStatus)
+    ? (row.renderStatus as RenderStatus)
+    : "none";
+
   return {
     id: row.id,
     title: row.title,
@@ -88,6 +94,10 @@ export function rowToProject(row: ProjectRow): Project {
     generationStatus,
     generationError: row.generationError ?? null,
     previousVersions,
+    hasVoiceover: Boolean(row.voiceoverPath),
+    renderStatus,
+    renderError: row.renderError ?? null,
+    hasFinalVideo: Boolean(row.finalVideoPath),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };

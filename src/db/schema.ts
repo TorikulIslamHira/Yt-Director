@@ -17,6 +17,15 @@ export const projects = sqliteTable("projects", {
   generationStatus: text("generation_status").notNull().default("idle"),
   generationError: text("generation_error"),
   previousVersions: text("previous_versions").notNull().default("[]"),
+  // Render-agent handoff (yt-direct-render-agent, lives in the
+  // faceless-yt-auto repo as render-agent/) — voiceover is uploaded by the
+  // editor here, then a pull-based agent on the editor's own PC claims the
+  // job, does forced alignment + ffmpeg assembly, and reports back.
+  voiceoverPath: text("voiceover_path"),
+  renderStatus: text("render_status").notNull().default("none"),
+  renderClaimedAt: integer("render_claimed_at"),
+  renderError: text("render_error"),
+  finalVideoPath: text("final_video_path"),
   createdAt: integer("created_at").notNull(),
   updatedAt: integer("updated_at").notNull(),
 });
